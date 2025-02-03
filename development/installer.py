@@ -208,6 +208,8 @@ def create_site_in_bench(args):
             "bench",
             "new-site",
             f"--db-host=mariadb",  # Should match the compose service name
+            f"--db-name=rapl",  # Should match the compose service name
+            f"--db-password=1212",  # Should match the compose service name
             f"--db-type={args.db_type}",  # Add the selected database type
             f"--no-mariadb-socket",
             f"--db-root-password=123",  # Replace with your MariaDB password
