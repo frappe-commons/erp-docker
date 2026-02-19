@@ -56,8 +56,8 @@ def get_args_parser():
         "--site-name",
         action="store",
         type=str,
-        help="Site name, should end with .localhost, default: rapl",  # noqa: E501
-        default="rapl",
+        help="Site name, should end with .localhost, default: metracks",  # noqa: E501
+        default="metracks",
     )
     parser.add_argument(
         "-r",
@@ -208,7 +208,7 @@ def create_site_in_bench(args):
             "bench",
             "new-site",
             f"--db-host=mariadb",  # Should match the compose service name
-            f"--db-name=rapl",  # Should match the compose service name
+            f"--db-name=metracks",  # Should match the compose service name
             f"--db-password=1212",  # Should match the compose service name
             f"--db-type={args.db_type}",  # Add the selected database type
             f"--no-mariadb-socket",

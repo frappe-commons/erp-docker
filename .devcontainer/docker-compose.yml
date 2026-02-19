@@ -45,7 +45,9 @@ services:
     platform: linux/amd64
 
   frappe:
-    image: docker.io/frappe/bench:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     platform: linux/amd64
     command: sleep infinity
     environment:
