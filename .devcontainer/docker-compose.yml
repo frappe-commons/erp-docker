@@ -50,7 +50,6 @@ services:
       - ..:/workspace:cached
       - ${HOME}/.ssh:/home/frappe/.ssh
       - ../backup:/workspace/development/backup
-      - ${HOME}/.antigravity-server:/home/frappe/.antigravity-server
     working_dir: /workspace/development
     ports:
       - 8001:8000
