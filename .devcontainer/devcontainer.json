@@ -33,5 +33,8 @@
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/frappe/.ssh,type=bind,consistency=cached"
   ],
-  "postCreateCommand": "sudo chown -R frappe:frappe /home/frappe"
+  "postCreateCommand": "sudo chown -R frappe:frappe /home/frappe",
+  "runArgs": [
+    "--gpus=all"
+  ]
 }
