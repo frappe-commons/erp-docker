@@ -6,7 +6,7 @@ Now you need to specify command and environment variables for following containe
 
 ### Frontend
 
-For `frontend` service to act as static assets frontend and reverse proxy, you need to pass `nginx-entrypoint.sh` as container `command` and `BACKEND` and `SOCKETIO` environment variables pointing `{host}:{port}` for gunicorn and websocket services. Check [environment variables](environment-variables.md)
+For `frontend` service to act as static assets frontend and reverse proxy, you need to pass `nginx-entrypoint.sh` as container `command` and `BACKEND` and `SOCKETIO` environment variables pointing `{host}:{port}` for gunicorn and websocket services. Check [environment variables](../02-setup/04-env-variables.md)
 
 Now you only need to mount the `sites` volume at location `/home/frappe/frappe-bench/sites`. No need for `assets` volume and asset population script or steps.
 
@@ -74,7 +74,7 @@ configurator:
 
 ### Site Creation
 
-For `create-site` service to act as run once site creation job, you need to pass `["bash", "-c"]` as container `entrypoint` and bash script inline to yaml. Make sure to use `--no-mariadb-socket` as upstream bench is installed in container.
+For `create-site` service to act as run once site creation job, you need to pass `["bash", "-c"]` as container `entrypoint` and bash script inline to yaml. Make sure to use `--mariadb-user-host-login-scope=%` as upstream bench is installed in container.
 
 The `WORKDIR` has changed to `/home/frappe/frappe-bench` like `bench` setup we are used to. So the path to find `common_site_config.json` has changed to `sites/common_site_config.json`.
 
@@ -106,7 +106,7 @@ create-site:
         fi
       done;
       echo "sites/common_site_config.json found";
-      bench new-site --no-mariadb-socket --admin-password=admin --db-root-password=admin --install-app erpnext --set-default frontend;
+      bench new-site --mariadb-user-host-login-scope=% --admin-password=admin --db-root-password=admin --install-app erpnext --set-default frontend;
 
 # ... removed for brevity
 ```
