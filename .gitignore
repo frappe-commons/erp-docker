@@ -18,7 +18,10 @@ development/*
 !.vscode/extensions.json
 
 # VS Code devcontainer
-.devcontainer
+.devcontainer/*
+!.devcontainer/devcontainer.json
+!.devcontainer/docker-compose.yml
+!.devcontainer/setup-tools.sh
 *.code-workspace
 
 # Python
@@ -31,3 +34,4 @@ node_modules
 
 # Backup
 /backup
+.tokensave
