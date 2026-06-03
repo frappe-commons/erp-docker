@@ -36,8 +36,8 @@ services:
       - ../backup:/workspace/development/backup
     working_dir: /workspace/development
     ports:
-      - 8001:8000
-      - 9001:9000
+      - 8010:8000
+      - 9010:9000
 
 volumes:
   mariadb-data:
