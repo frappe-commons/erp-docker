@@ -18,8 +18,8 @@ frappe_docker/
 ├── compose.yaml          # Base Compose File for production setups
 ├── pwd.yml               # Single Compose File for quick disposable demo
 ├── images/               # Dockerfiles for building Frappe images
-├── development/          # Development environment configurations
-├── devcontainer-example/ # VS Code devcontainer setup
+├── development/          # Development workspace and bootstrap installer
+├── .devcontainer/        # Cross-platform development environment
 └── resources/            # Helper scripts and configuration templates
 ```
 
@@ -31,6 +31,7 @@ frappe_docker/
 - `overrides/` - Opinionated Compose overrides for common deployment patterns
 - `compose.yaml` - Base compose file for production setups (production)
 - `pwd.yml` - Disposable demo environment (non-production)
+- `.devcontainer/` - Local development environment for macOS, Windows, and Linux
 
 ## Documentation
 
@@ -47,6 +48,24 @@ If you are already familiar with Frappe, you can jump right into the [different 
 - [git](https://docs.github.com/en/get-started/getting-started-with-git/set-up-git)
 
 > For Docker basics and best practices refer to Docker's [documentation](http://docs.docker.com)
+
+## Development quick start
+
+After cloning the repository, macOS, Windows, and Linux users can create and
+start the complete development environment with the same command:
+
+```sh
+docker compose -f .devcontainer/docker-compose.yml up --detach --wait
+```
+
+Docker pulls the required images, creates MariaDB and Redis, initializes the
+Bench and `srv` site when missing, and waits until Frappe is ready. Open
+[http://localhost:8000](http://localhost:8000) and sign in as `Administrator`
+with password `admin`.
+
+The command is safe to run again: an existing Bench and site are reused. See
+the [development guide](docs/05-development/01-development.md) for configuration
+overrides, logs, and optional VS Code Dev Containers integration.
 
 ## Demo setup
 

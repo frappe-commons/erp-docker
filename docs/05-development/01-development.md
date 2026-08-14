@@ -1,12 +1,18 @@
-# Getting Started
+# Local Development
 
 ## Prerequisites
 
-In order to start developing you need to satisfy the following prerequisites:
+The development environment has the same host requirements on macOS, Windows,
+and Linux:
 
-- Docker
-- docker-compose
-- user added to docker group
+- [Git](https://git-scm.com/downloads)
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose v2](https://docs.docker.com/compose/), available as
+  `docker compose`
+
+Docker Desktop includes Compose v2 on macOS and Windows. On Linux, install the
+Docker Engine Compose plugin. Linux users may also need permission to access
+the Docker daemon; macOS and Windows users do not need a Docker group.
 
 It is recommended you allocate at least 4GB of RAM to docker:
 
@@ -18,33 +24,86 @@ Here is a screenshot showing the relevant setting in the Help Manual
 Here is a screenshot showing the settings in Docker Desktop on Mac
 ![images](../images/Docker%20Desktop%20Screenshot%20-%20Resources%20section.png)
 
-## Bootstrap Containers for development
+## Create the environment
 
-Clone and change directory to frappe_docker directory
+Clone the repository and change to its directory:
 
 ```shell
 git clone https://github.com/frappe/frappe_docker.git
 cd frappe_docker
 ```
 
-Copy example devcontainer config from `devcontainer-example` to `.devcontainer`
+Then run this single command from the repository root in Terminal, PowerShell,
+Command Prompt, or another shell:
 
 ```shell
-cp -R devcontainer-example .devcontainer
+docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 ```
 
-Copy example vscode config for devcontainer from `development/vscode-example` to `development/.vscode`. This will setup basic configuration for debugging.
+The command pulls the required images, starts MariaDB and Redis, creates the
+Bench and site when they are missing, starts Frappe, and waits for its health
+check. Initial setup can take several minutes. When it returns, open
+[http://localhost:8000](http://localhost:8000).
+
+The defaults are:
+
+| Setting                | Default         |
+| ---------------------- | --------------- |
+| Site                   | `srv`           |
+| User                   | `Administrator` |
+| Administrator password | `admin`         |
+| MariaDB root password  | `123`           |
+| Frappe branch          | `version-16`    |
+| HTTP port              | `8000`          |
+| Socket.IO port         | `9000`          |
+
+Running the command again is safe. Existing Bench and site data are preserved
+in the bind mount and named database volume.
+
+### Configuration overrides
+
+To change defaults consistently across shells, create an ignored `.env` file
+in the repository root before running the command:
+
+```dotenv
+ADMIN_PASSWORD=change-me
+DB_PASSWORD=change-me-too
+SITE_NAME=my-site
+HTTP_PORT=8010
+SOCKETIO_PORT=9010
+```
+
+Supported variables are `ADMIN_PASSWORD`, `BENCH_NAME`, `DB_PASSWORD`,
+`FRAPPE_BRANCH`, `SITE_NAME`, `HTTP_PORT`, `SOCKETIO_PORT`, and
+`COMPOSE_PROJECT_NAME`. `FRAPPE_BRANCH` and `ADMIN_PASSWORD` apply when their
+Bench or site is first created. Database credentials are applied when the
+MariaDB volume is first initialized; changing them later does not update an
+existing database account.
+
+To watch startup or diagnose a failed health check:
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml logs --follow frappe
+```
+
+The portable baseline does not require a GPU or mount SSH keys, Codex tokens,
+or other host credentials. Developers who need private repositories, GPU
+access, or additional credentials can add those capabilities through a local
+Compose override appropriate for their host.
+
+## Optional: use VS Code Dev Containers
+
+The Compose environment works without an editor integration. To develop inside
+the same container from VS Code, install the
+[Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+and reopen the repository in the container.
+
+For the checked-in debugging configuration, copy the example VS Code settings
+to the ignored development workspace before reopening:
 
 ```shell
 cp -R development/vscode-example development/.vscode
 ```
-
-## Use VSCode Remote Containers extension
-
-For most people getting started with Frappe development, the best solution is to use [VSCode Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
-
-Before opening the folder in container, determine the database that you want to use. The default is MariaDB.
-If you want to use PostgreSQL instead, edit `.devcontainer/docker-compose.yml` and uncomment the section for `postgresql` service, and you may also want to comment `mariadb` as well.
 
 VSCode should automatically inquire you to install the required extensions, that can also be installed manually as follows:
 
@@ -62,11 +121,13 @@ After the extensions are installed, you can:
 Notes:
 
 - The `development` directory is ignored by git. It is mounted and available inside the container. Create all your benches (installations of bench, the tool that manages frappe) inside this directory.
-- Node v14 and v10 are installed. Check with `nvm ls`. Node v14 is used by default.
+- Node versions are managed with `nvm`. Use `nvm ls` to inspect the versions available in the current Bench image.
 
-### Setup first bench
+### Advanced: set up a Bench manually
 
-> Jump to [scripts](#setup-bench--new-site-using-script) section to setup a bench automatically. Alternatively, you can setup a bench manually using below guide.
+> The one-command bootstrap already creates and starts the default Bench and
+> site. Use the steps below only when you intentionally need a separate manual
+> setup.
 
 Run the following commands in the terminal inside the container. You might need to create a new terminal in VSCode.
 
@@ -341,18 +402,18 @@ The first command can take a few seconds to be executed, this is to be expected.
 
 ## Manually start containers
 
-In case you don't use VSCode, you may start the containers manually with the following command:
+The one-command environment does not require VS Code. Start it with:
 
 ### Running the containers
 
 ```shell
-docker-compose -f .devcontainer/docker-compose.yml up -d
+docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 ```
 
-And enter the interactive shell for the development container with the following command:
+Open an interactive shell in the development container with:
 
 ```shell
-docker exec -e "TERM=xterm-256color" -w /workspace/development -it devcontainer-frappe-1 bash
+docker compose -f .devcontainer/docker-compose.yml exec frappe bash
 ```
 
 ## Use additional services during development

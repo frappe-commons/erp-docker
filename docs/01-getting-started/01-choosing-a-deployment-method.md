@@ -16,7 +16,7 @@ Reading this document **before following any setup guide** is strongly recommend
 | Goal                         | Recommended Method        | Production Ready |
 | ---------------------------- | ------------------------- | ---------------- |
 | Quick exploration            | `pwd.yml`                 | ❌               |
-| Local development            | VS Code Devcontainers     | ❌               |
+| Local development            | Development Compose stack | ❌               |
 | Automated production install | Easy Install Script       | ✅               |
 | Manual production deployment | `compose.yml` + overrides | ✅               |
 
@@ -43,17 +43,21 @@ The `pwd.yml` file is a **single, self-contained Docker Compose file** intended 
 
 If you start with `pwd.yml`, you should expect to **throw the environment away**.
 
-## 2. VS Code Devcontainers – Local Development Setup
+## 2. Docker Compose – Local Development Setup
 
-The development setup described in [`/docs/05-development`](../05-development)
+The development setup described in the
+[local development guide](../05-development/01-development.md)
 
-uses **VS Code Devcontainers** to provide a **local Frappe development environment**.
+uses a checked-in **Docker Compose stack** to provide a **local Frappe
+development environment** on macOS, Windows, and Linux. VS Code Dev Containers
+is an optional interface to the same environment.
 
 ### Intended Use
 
 - Developing Frappe or custom apps
 - Working with source code
 - Debugging and testing changes locally
+- Creating the full environment with one command
 
 ### Key Differences from Other Setups
 
