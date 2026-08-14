@@ -60,12 +60,12 @@ docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 
 Docker pulls the required images, creates MariaDB and Redis, initializes the
 Bench and `srv` site when missing, and waits until Frappe is ready. Open
-[http://localhost:8000](http://localhost:8000) and sign in as `Administrator`
-with password `admin`.
+`http://localhost:8000` and sign in as `Administrator` with password `admin`.
 
 The command is safe to run again: an existing Bench and site are reused. See
-the [development guide](docs/05-development/01-development.md) for configuration
-overrides, logs, and optional VS Code Dev Containers integration.
+the [complete development environment guide](docs/05-development/01-development.md)
+for configuration, daily commands, persistence, updates, troubleshooting,
+reset instructions, and optional VS Code Dev Containers integration.
 
 ## Demo setup
 

@@ -1,470 +1,366 @@
-# Local Development
+# Local Development with Docker Compose
 
-## Prerequisites
+This repository includes a complete local Frappe development environment for
+macOS, Windows, and Linux. Docker and Docker Compose are the only runtime
+dependencies on the host; VS Code is optional.
 
-The development environment has the same host requirements on macOS, Windows,
-and Linux:
+> This environment is for local development only. It uses convenient default
+> credentials and is not suitable for production or an internet-facing host.
+
+## Quick start
+
+Install these prerequisites:
 
 - [Git](https://git-scm.com/downloads)
 - [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose v2](https://docs.docker.com/compose/), available as
+- [Docker Compose v2](https://docs.docker.com/compose/), invoked as
   `docker compose`
 
-Docker Desktop includes Compose v2 on macOS and Windows. On Linux, install the
-Docker Engine Compose plugin. Linux users may also need permission to access
-the Docker daemon; macOS and Windows users do not need a Docker group.
+Docker Desktop includes Compose v2 on macOS and Windows. Linux users should
+install Docker Engine with the Compose plugin and ensure their user can access
+the Docker daemon. Allocate at least 4 GB of memory to Docker.
 
-It is recommended you allocate at least 4GB of RAM to docker:
-
-- [Instructions for Windows](https://docs.docker.com/docker-for-windows/#resources)
-- [Instructions for macOS](https://docs.docker.com/desktop/settings/mac/#advanced)
-
-Here is a screenshot showing the relevant setting in the Help Manual
-![image](../images/Docker%20Manual%20Screenshot%20-%20Resources%20section.png)
-Here is a screenshot showing the settings in Docker Desktop on Mac
-![images](../images/Docker%20Desktop%20Screenshot%20-%20Resources%20section.png)
-
-## Create the environment
-
-Clone the repository and change to its directory:
+Clone the repository and enter it:
 
 ```shell
 git clone https://github.com/frappe/frappe_docker.git
 cd frappe_docker
 ```
 
-Then run this single command from the repository root in Terminal, PowerShell,
-Command Prompt, or another shell:
+From the repository root, create and start the environment with the same
+command on every supported host:
 
 ```shell
 docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 ```
 
-The command pulls the required images, starts MariaDB and Redis, creates the
-Bench and site when they are missing, starts Frappe, and waits for its health
-check. Initial setup can take several minutes. When it returns, open
-[http://localhost:8000](http://localhost:8000).
+The first run pulls container images and clones the configured Frappe apps, so
+it can take several minutes. The command returns when the Frappe health check
+passes.
 
-The defaults are:
+Open `http://localhost:8000` and sign in with:
 
-| Setting                | Default         |
-| ---------------------- | --------------- |
-| Site                   | `srv`           |
-| User                   | `Administrator` |
-| Administrator password | `admin`         |
-| MariaDB root password  | `123`           |
-| Frappe branch          | `version-16`    |
-| HTTP port              | `8000`          |
-| Socket.IO port         | `9000`          |
+- User: `Administrator`
+- Password: `admin`
 
-Running the command again is safe. Existing Bench and site data are preserved
-in the bind mount and named database volume.
+Running the command again is safe. The bootstrap reuses an existing Bench and
+site instead of recreating them.
 
-### Configuration overrides
+## What the command creates
 
-To change defaults consistently across shells, create an ignored `.env` file
-in the repository root before running the command:
+The development Compose project starts these services:
+
+| Service       | Purpose                                           |
+| ------------- | ------------------------------------------------- |
+| `frappe`      | Bench CLI, Frappe web server, workers, and assets |
+| `mariadb`     | Site database                                     |
+| `redis-cache` | Frappe cache                                      |
+| `redis-queue` | Queue and Socket.IO Redis service                 |
+
+The `frappe` service runs `.devcontainer/start-development.sh`, which:
+
+1. Aligns file ownership with the repository owner on native Linux.
+2. Creates `development/frappe-bench` when no Bench exists.
+3. Configures MariaDB, Redis, and developer mode.
+4. Creates the `srv` site when missing, or selects the existing site.
+5. Starts the Bench development processes.
+
+The default Bench is initialized from `development/apps.json` on Frappe
+`version-16`.
+
+## Configure the environment
+
+### Defaults
+
+| Setting                | Default           |
+| ---------------------- | ----------------- |
+| Compose project        | `srv-development` |
+| Bench directory        | `frappe-bench`    |
+| Site                   | `srv`             |
+| Frappe branch          | `version-16`      |
+| Administrator password | `admin`           |
+| MariaDB root password  | `123`             |
+| HTTP port              | `8000`            |
+| Socket.IO port         | `9000`            |
+
+### Use a `.env` file
+
+Create an ignored `.env` file in the repository root before the first run to
+change the defaults without using shell-specific environment syntax:
 
 ```dotenv
+COMPOSE_PROJECT_NAME=my-frappe-development
+BENCH_NAME=frappe-bench
+SITE_NAME=my-site
+FRAPPE_BRANCH=version-16
 ADMIN_PASSWORD=change-me
 DB_PASSWORD=change-me-too
-SITE_NAME=my-site
 HTTP_PORT=8010
 SOCKETIO_PORT=9010
 ```
 
-Supported variables are `ADMIN_PASSWORD`, `BENCH_NAME`, `DB_PASSWORD`,
-`FRAPPE_BRANCH`, `SITE_NAME`, `HTTP_PORT`, `SOCKETIO_PORT`, and
-`COMPOSE_PROJECT_NAME`. `FRAPPE_BRANCH` and `ADMIN_PASSWORD` apply when their
-Bench or site is first created. Database credentials are applied when the
-MariaDB volume is first initialized; changing them later does not update an
-existing database account.
+| Variable               | When it is used                                     |
+| ---------------------- | --------------------------------------------------- |
+| `COMPOSE_PROJECT_NAME` | Names and isolates the Compose project and volumes  |
+| `BENCH_NAME`           | Selects or creates `development/<BENCH_NAME>`       |
+| `SITE_NAME`            | Selects an existing site or creates a new site      |
+| `FRAPPE_BRANCH`        | Applies only when a new Bench is created            |
+| `ADMIN_PASSWORD`       | Applies only when a new site is created             |
+| `DB_PASSWORD`          | Initializes MariaDB and authenticates site creation |
+| `HTTP_PORT`            | Publishes the Frappe web server on the host         |
+| `SOCKETIO_PORT`        | Publishes the Socket.IO service on the host         |
 
-To watch startup or diagnose a failed health check:
+Keep the same `COMPOSE_PROJECT_NAME` and `DB_PASSWORD` after the first run.
+Changing the project name selects a different set of containers and volumes;
+changing the password does not update an existing MariaDB account.
 
-```shell
-docker compose -f .devcontainer/docker-compose.yml logs --follow frappe
-```
-
-The portable baseline does not require a GPU or mount SSH keys, Codex tokens,
-or other host credentials. Developers who need private repositories, GPU
-access, or additional credentials can add those capabilities through a local
-Compose override appropriate for their host.
-
-## Optional: use VS Code Dev Containers
-
-The Compose environment works without an editor integration. To develop inside
-the same container from VS Code, install the
-[Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-and reopen the repository in the container.
-
-For the checked-in debugging configuration, copy the example VS Code settings
-to the ignored development workspace before reopening:
+Preview the resolved configuration without starting or changing containers:
 
 ```shell
-cp -R development/vscode-example development/.vscode
+docker compose -f .devcontainer/docker-compose.yml config
 ```
 
-VSCode should automatically inquire you to install the required extensions, that can also be installed manually as follows:
+## Everyday commands
 
-- Install Dev Containers for VSCode
-  - through command line `code --install-extension ms-vscode-remote.remote-containers`
-  - clicking on the Install button in the Vistual Studio Marketplace: [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-  - View: Extensions command in VSCode (Windows: Ctrl+Shift+X; macOS: Cmd+Shift+X) then search for extension `ms-vscode-remote.remote-containers`
+Run these commands from the repository root.
 
-After the extensions are installed, you can:
-
-- Open frappe_docker folder in VS Code.
-  - `code .`
-- Launch the command, from Command Palette (Ctrl + Shift + P) `Dev Containers: Reopen in Container`. You can also click in the bottom left corner to access the remote container menu.
-
-Notes:
-
-- The `development` directory is ignored by git. It is mounted and available inside the container. Create all your benches (installations of bench, the tool that manages frappe) inside this directory.
-- Node versions are managed with `nvm`. Use `nvm ls` to inspect the versions available in the current Bench image.
-
-### Advanced: set up a Bench manually
-
-> The one-command bootstrap already creates and starts the default Bench and
-> site. Use the steps below only when you intentionally need a separate manual
-> setup.
-
-Run the following commands in the terminal inside the container. You might need to create a new terminal in VSCode.
-
-NOTE: Prior to doing the following, make sure the user is **frappe**.
-
-```shell
-bench init --skip-redis-config-generation frappe-bench
-cd frappe-bench
-```
-
-To setup frappe framework version 14 bench set `PYENV_VERSION` environment variable to `3.10.5` (default) and use NodeJS version 16 (default),
-
-```shell
-# Use default environments
-bench init --skip-redis-config-generation --frappe-branch version-14 frappe-bench
-# Or set environment versions explicitly
-nvm use v16
-PYENV_VERSION=3.10.13 bench init --skip-redis-config-generation --frappe-branch version-14 frappe-bench
-# Switch directory
-cd frappe-bench
-```
-
-To setup frappe framework version 13 bench set `PYENV_VERSION` environment variable to `3.9.17` and use NodeJS version 14,
-
-```shell
-nvm use v14
-PYENV_VERSION=3.9.17 bench init --skip-redis-config-generation --frappe-branch version-13 frappe-bench
-cd frappe-bench
-```
-
-### Setup hosts
-
-We need to tell bench to use the right containers instead of localhost. Run the following commands inside the container:
-
-```shell
-bench set-config -g db_host mariadb
-bench set-config -g redis_cache redis://redis-cache:6379
-bench set-config -g redis_queue redis://redis-queue:6379
-bench set-config -g redis_socketio redis://redis-queue:6379
-```
-
-For any reason the above commands fail, set the values in `common_site_config.json` manually.
-
-```json
-{
-  "db_host": "mariadb",
-  "redis_cache": "redis://redis-cache:6379",
-  "redis_queue": "redis://redis-queue:6379",
-  "redis_socketio": "redis://redis-queue:6379"
-}
-```
-
-### Edit Honcho's Procfile
-
-Note : With the option '--skip-redis-config-generation' during bench init, these actions are no more needed. But at least, take a look to ProcFile to see what going on when bench launch honcho on start command
-
-Honcho is the tool used by Bench to manage all the processes Frappe requires. Usually, these all run in localhost, but in this case, we have external containers for Redis. For this reason, we have to stop Honcho from trying to start Redis processes.
-
-Honcho is installed in global python environment along with bench. To make it available locally you've to install it in every `frappe-bench/env` you create. Install it using command `./env/bin/pip install honcho`. It is required locally if you wish to use is as part of VSCode launch configuration.
-
-Open the Procfile file and remove the three lines containing the configuration from Redis, either by editing manually the file:
-
-```shell
-code Procfile
-```
-
-Or running the following command:
-
-```shell
-sed -i '/redis/d' ./Procfile
-```
-
-### Create a new site with bench
-
-You can create a new site with the following command:
-
-```shell
-bench new-site --mariadb-user-host-login-scope=% sitename
-```
-
-sitename MUST end with .localhost for trying deployments locally.
-
-for example:
-
-```shell
-bench new-site --mariadb-user-host-login-scope=% development.localhost
-```
-
-The same command can be run non-interactively as well:
-
-```shell
-bench new-site --db-root-password 123 --admin-password admin --mariadb-user-host-login-scope=% development.localhost
-```
-
-The command will ask the MariaDB root password. The default root password is `123`.
-This will create a new site and a `development.localhost` directory under `frappe-bench/sites`.
-The option `--mariadb-user-host-login-scope=%` will configure site's database credentials to work with docker.
-You may need to configure your system /etc/hosts if you're on Linux, Mac, or its Windows equivalent.
-
-To setup site with PostgreSQL as database use option `--db-type postgres` and `--db-host postgresql`. (Available only v12 onwards, currently NOT available for ERPNext).
-
-Example:
-
-```shell
-bench new-site --db-type postgres --db-host postgresql mypgsql.localhost
-```
-
-To avoid entering postgresql username and root password, set it in `common_site_config.json`,
-
-```shell
-bench config set-common-config -c root_login postgres
-bench config set-common-config -c root_password '"123"'
-```
-
-Note: If PostgreSQL is not required, the postgresql service / container can be stopped.
-
-### Set bench developer mode on the new site
-
-To develop a new app, the last step will be setting the site into developer mode. Documentation is available at [this link](https://frappe.io/docs/user/en/guides/app-development/how-enable-developer-mode-in-frappe).
-
-```shell
-bench --site development.localhost set-config developer_mode 1
-bench --site development.localhost clear-cache
-```
-
-### Install an app
-
-To install an app we need to fetch it from the appropriate git repo, then install in on the appropriate site:
-
-You can check [VSCode container remote extension documentation](https://code.visualstudio.com/docs/remote/containers#_sharing-git-credentials-with-your-container) regarding git credential sharing.
-
-To install custom app
-
-```shell
-# --branch is optional, use it to point to branch on custom app repository
-bench get-app --branch version-12 https://github.com/myusername/myapp
-bench --site development.localhost install-app myapp
-```
-
-At the time of this writing, the Payments app has been factored out of the Version 14 ERPNext app and is now a separate app. ERPNext will not install it.
-
-```shell
-bench get-app --branch version-14 --resolve-deps erpnext
-bench --site development.localhost install-app erpnext
-```
-
-To install ERPNext (from the version-13 branch):
-
-```shell
-bench get-app --branch version-13 erpnext
-bench --site development.localhost install-app erpnext
-```
-
-Note: Both frappe and erpnext must be on branch with same name. e.g. version-14
-You can use the `switch-to-branch` command to align versions if you get an error about mismatching versions.
-
-```shell
-bench switch-to-branch version-xx
-```
-
-### Start Frappe without debugging
-
-Execute following command from the `frappe-bench` directory.
-
-```shell
-bench start
-```
-
-You can now login with user `Administrator` and the password you choose when creating the site.
-Your website will now be accessible at location [development.localhost:8000](http://development.localhost:8000)
-Note: To start bench with debugger refer section for debugging.
-
-### Setup bench / new site using script
-
-Most developers work with numerous clients and versions. Moreover, apps may be required to be installed by everyone on the team working for a client.
-
-This is simplified using a script that creates a bench and site, configures Redis and the selected database, and installs every app listed in the bench's `apps` directory. The default site is `srv`, and the default `Administrator` password is `admin`.
-
-The checked-in `apps.json` is used by default. To install custom apps, copy it to another JSON file, edit the app URLs and branches, and pass the new path with `--apps-json`.
-
-> You may have apps in private repos which may require ssh access. You may use SSH from your home directory on linux (configurable in docker-compose.yml).
-
-```shell
-cd /workspace/development
-python installer.py
-
-# PostgreSQL
-python installer.py --db-type postgres
-
-# Custom database root password (preferred over putting it in shell history)
-DB_PASSWORD=change-me python installer.py
-```
-
-For the complete, current option list, run:
-
-```shell
-python installer.py --help
-```
-
-A new bench and / or site is created for the client with following defaults.
-
-- Database type: `mariadb` (supported values: `mariadb`, `postgres`)
-- MariaDB root password: `123`
-- MariaDB site database name: `srv`
-- MariaDB site database password: `1212`
-- Admin password: `admin`
-
-Use `--db-root-password`, `--db-name`, `--db-password`, and `--admin-password` to override these values. The `DB_PASSWORD` environment variable also overrides the root-password default. The database service and credentials must match the active Compose configuration.
-
-### Start Frappe with Visual Studio Code Python Debugging
-
-To enable Python debugging inside Visual Studio Code, you must first install the `ms-python.python` extension inside the container. This should have already happened automatically, but depending on your VSCode config, you can force it by:
-
-- Click on the extension icon inside VSCode
-- Search `ms-python.python`
-- Click on `Install on Dev Container: Frappe Bench`
-- Click on 'Reload'
-
-We need to start bench separately through the VSCode debugger. For this reason, **instead** of running `bench start` you should run the following command inside the frappe-bench directory:
-
-```shell
-honcho start \
-    socketio \
-    watch \
-    schedule \
-    worker_short \
-    worker_long
-```
-
-Alternatively you can use the VSCode launch configuration "Honcho SocketIO Watch Schedule Worker" which launches the same command as above.
-
-This command starts all processes with the exception of Redis (which is already running in separate container) and the `web` process. The latter can can finally be started from the debugger tab of VSCode by clicking on the "play" button.
-
-You can now login with user `Administrator` and the password you choose when creating the site, if you followed this guide's unattended install that password is going to be `admin`.
-
-To debug workers, skip starting worker with honcho and start it with VSCode debugger.
-
-For advance vscode configuration in the devcontainer, change the config files in `development/.vscode`.
-
-## Developing using the interactive console
-
-You can launch a simple interactive shell console in the terminal with:
-
-```shell
-bench --site development.localhost console
-```
-
-More likely, you may want to launch VSCode interactive console based on Jupyter kernel.
-
-Launch VSCode command palette (cmd+shift+p or ctrl+shift+p), run the command `Python: Select interpreter to start Jupyter server` and select `/workspace/development/frappe-bench/env/bin/python`.
-
-The first step is installing and updating the required software. Usually the frappe framework may require an older version of Jupyter, while VSCode likes to move fast, this can [cause issues](https://github.com/jupyter/jupyter_console/issues/158). For this reason we need to run the following command.
-
-```shell
-/workspace/development/frappe-bench/env/bin/python -m pip install --upgrade jupyter ipykernel ipython
-```
-
-Then, run the command `Python: Show Python interactive window` from the VSCode command palette.
-
-Replace `development.localhost` with your site and run the following code in a Jupyter cell:
-
-```python
-import frappe
-
-frappe.init(site='development.localhost', sites_path='/workspace/development/frappe-bench/sites')
-frappe.connect()
-frappe.local.lang = frappe.db.get_default('lang')
-frappe.db.connect()
-```
-
-The first command can take a few seconds to be executed, this is to be expected.
-
-## Manually start containers
-
-The one-command environment does not require VS Code. Start it with:
-
-### Running the containers
+### Start or resume the environment
 
 ```shell
 docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 ```
 
-Open an interactive shell in the development container with:
+Compose recreates a service when its configuration changed and leaves healthy,
+unchanged services running.
+
+### Check service status
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml ps
+```
+
+### Follow logs
+
+All services:
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml logs --follow --tail=200
+```
+
+Only the Frappe bootstrap and development server:
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml logs --follow --tail=200 frappe
+```
+
+Press `Ctrl+C` to stop following logs; the containers continue running.
+
+### Open a development shell
 
 ```shell
 docker compose -f .devcontainer/docker-compose.yml exec frappe bash
 ```
 
-## Use additional services during development
+The repository is mounted at `/workspace`, and the development workspace is
+`/workspace/development`.
 
-Add any service that is needed for development in the `.devcontainer/docker-compose.yml` then rebuild and reopen in devcontainer.
+### Run Bench commands from the host
 
-e.g.
-
-```yaml
-...
-services:
- ...
-  postgresql:
-    image: postgres:11.8
-    environment:
-      POSTGRES_PASSWORD: 123
-    volumes:
-      - postgresql-data:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
-
-volumes:
-  ...
-  postgresql-data:
-```
-
-Access the service by service name from the `frappe` development container. The above service will be accessible via hostname `postgresql`. If ports are published on to host, access it via `localhost:5432`.
-
-## Using Cypress UI tests
-
-To run cypress based UI tests in a docker environment, follow the below steps:
-
-1. Install and setup X11 tooling on VM using the script `install_x11_deps.sh`
+Use Compose's `--workdir` option so Bench runs from the correct directory. For
+the default Bench and site:
 
 ```shell
-  sudo bash ./install_x11_deps.sh
+docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench --site srv migrate
 ```
 
-This script will install required deps, enable X11Forwarding and restart SSH daemon and export `DISPLAY` variable.
+Other useful examples:
 
-2. Run X11 service `startx` or `xquartz`
-3. Start docker compose services.
-4. SSH into ui-tester service using `docker exec..` command
-5. Export CYPRESS_baseUrl and other required env variables
-6. Start Cypress UI console by issuing `cypress run command`
+```shell
+docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench --site srv console
+docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench --site srv backup --with-files
+docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench list-sites
+```
 
-> More references : [Cypress Official Documentation](https://www.cypress.io/blog/2019/05/02/run-cypress-with-a-single-docker-command)
+Replace the Bench path and site name when `BENCH_NAME` or `SITE_NAME` is
+overridden.
 
-> Ensure DISPLAY environment is always exported.
+### Stop without deleting data
 
-## Using Mailpit to test mail services
+```shell
+docker compose -f .devcontainer/docker-compose.yml stop
+```
 
-To use Mailpit just uncomment the service in the docker-compose.yml file.
-The Interface is then available under port 8025 and the smtp service can be used as mailpit:1025.
+Run the quick-start command again to resume.
+
+### Remove replaceable containers
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml down
+```
+
+This removes the containers and Compose network but preserves the Bench files
+and named volumes. The next `up --detach --wait` recreates the containers.
+
+## Files and persistence
+
+| Data                 | Location or storage                                              | Persists after `down` |
+| -------------------- | ---------------------------------------------------------------- | --------------------- |
+| Repository files     | Host repository, mounted at `/workspace`                         | Yes                   |
+| Bench, apps, sites   | `development/<BENCH_NAME>`                                       | Yes                   |
+| MariaDB data         | Compose-managed `mariadb-data` named volume                      | Yes                   |
+| Cargo and Rust tools | Compose-managed `tokensave-cargo` and `tokensave-rustup` volumes | Yes                   |
+| Redis state          | Replaceable container storage                                    | No                    |
+
+Do not delete only the Bench directory or only the MariaDB volume. A site needs
+both its files and its database.
+
+## Work with apps
+
+For a brand-new environment, edit `development/apps.json` before the first run
+to control which apps Bench downloads. Changing that file later does not alter
+an existing Bench automatically.
+
+For an existing Bench, open a development shell and use Bench directly:
+
+```shell
+cd frappe-bench
+bench get-app --branch version-16 https://github.com/example/my_app.git
+bench --site srv install-app my_app
+```
+
+Use matching branches for Frappe and its apps. Private repositories require
+credentials that are accessible inside the container; host SSH keys and other
+credentials are intentionally not mounted by default.
+
+## Use VS Code Dev Containers
+
+VS Code is optional and uses the same Compose project:
+
+1. Install the
+   [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
+2. Open the repository folder in VS Code.
+3. Run **Dev Containers: Reopen in Container** from the Command Palette.
+
+VS Code attaches to the `frappe` service and opens `/workspace/development`.
+The checked-in `postCreateCommand` installs the additional development tools.
+Copy `development/vscode-example` to `development/.vscode` if you want the
+example launch and task configurations.
+
+The current Dev Container configuration uses `shutdownAction: stopCompose`, so
+closing the Dev Container may stop the development services. Run the quick-start
+command to resume them.
+
+See [Debugging](02-debugging.md) for debugger setup.
+
+## Update the environment
+
+After pulling repository changes, update images and reconcile the services:
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml pull
+docker compose -f .devcontainer/docker-compose.yml up --detach --wait
+```
+
+The bootstrap preserves existing Bench and site state. It does not switch the
+branch of an existing Bench, install newly added apps, run migrations, or reset
+passwords automatically. Perform those upgrades explicitly with Bench after
+reviewing the relevant Frappe upgrade instructions and taking a backup.
+
+## Troubleshooting
+
+### The startup command exits before Frappe is healthy
+
+Inspect status and the Frappe logs:
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml ps
+docker compose -f .devcontainer/docker-compose.yml logs --tail=300 frappe
+```
+
+The first installation can be slow while apps and dependencies download. The
+Frappe health check allows up to 30 minutes for initial setup.
+
+### A host port is already allocated
+
+Set unused ports in the root `.env` file, then run the quick-start command
+again:
+
+```dotenv
+HTTP_PORT=8010
+SOCKETIO_PORT=9010
+```
+
+Open the configured HTTP port, such as `http://localhost:8010`.
+
+### Docker reports a permission error on Linux
+
+Confirm the Docker daemon is running and follow Docker's
+[Linux post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/)
+to grant your user access. Log out and back in after changing group membership.
+
+### MariaDB rejects the configured password
+
+Use the `DB_PASSWORD` that initialized the existing volume. Updating `.env`
+does not change MariaDB credentials already stored in the volume.
+
+### The bootstrap says the Bench directory is invalid
+
+The selected `development/<BENCH_NAME>` exists but does not contain both
+`apps/` and `sites/`. Inspect or move that directory instead of deleting it;
+it may contain work that should be recovered.
+
+### Containers need access to another local service
+
+See [Connecting to local services](03-local-services-connection.md).
+
+## Reset the environment
+
+Use `down` without `--volumes` for normal container recreation. A full reset is
+destructive and should be rare.
+
+To reset everything:
+
+1. Stop the environment.
+
+   ```shell
+   docker compose -f .devcontainer/docker-compose.yml stop
+   ```
+
+2. Move `development/<BENCH_NAME>` outside the repository as a recoverable
+   backup. Do not move it while the services are running.
+3. Remove the containers and all Compose-managed volumes.
+
+   ```shell
+   docker compose -f .devcontainer/docker-compose.yml down --volumes
+   ```
+
+4. Run the quick-start command to create a new environment.
+
+`down --volumes` permanently removes MariaDB data and the Cargo/Rust tool
+volumes for the selected Compose project. Confirm the active
+`COMPOSE_PROJECT_NAME` before running it. Keep any Bench backup outside
+`development/<BENCH_NAME>`, because that directory must be absent for a clean
+bootstrap.
+
+## Security and host-specific features
+
+The default passwords are intentionally convenient for local use. Published
+ports may be reachable from other machines depending on Docker and firewall
+configuration. Use strong credentials on shared networks and never use this
+stack as a production deployment.
+
+GPU access, SSH keys, Codex authentication, and other private host files are
+optional and are not mounted by the portable baseline. Add only the specific
+capabilities you need through a local Compose override suitable for your host.
+
+## Further reading
+
+- [Choosing a deployment or development method](../01-getting-started/01-choosing-a-deployment-method.md)
+- [Debugging](02-debugging.md)
+- [Connecting to local services](03-local-services-connection.md)
+- Installer options from inside the `frappe` container:
+
+  ```shell
+  cd /workspace/development
+  python installer.py --help
+  ```
