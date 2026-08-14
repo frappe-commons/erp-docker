@@ -30,14 +30,7 @@
   "service": "frappe",
   "workspaceFolder": "/workspace/development",
   "shutdownAction": "stopCompose",
-  "mounts": [
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/frappe/.ssh,type=bind,consistency=cached",
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.codex/auth.json,target=/home/frappe/.codex-host-auth.json,type=bind,consistency=cached,readonly"
-  ],
   "postCreateCommand": "/workspace/.devcontainer/setup-tools.sh",
-  "runArgs": [
-    "--gpus=all"
-  ],
   "remoteEnv": {
     "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
   }

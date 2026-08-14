@@ -44,6 +44,9 @@ def main() -> int:
         command = _format_command(error.cmd)
         cprint(f"Command failed with exit code {error.returncode}: {command}", level=1)
         return error.returncode
+    except (OSError, RuntimeError) as error:
+        cprint(error, level=1)
+        return 1
     return 0
 
 
@@ -78,8 +81,8 @@ def get_args_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-t",
         "--frappe-branch",
-        help="Frappe branch (default: version-15)",
-        default="version-15",
+        help="Frappe branch (default: version-16)",
+        default="version-16",
     )
     parser.add_argument(
         "-p",
@@ -182,18 +185,19 @@ def init_bench_if_not_exist(args: argparse.Namespace) -> None:
     workspace = Path.cwd()
     bench_dir = workspace / args.bench_name
     if bench_dir.exists():
-        cprint("Bench already exists. Only site will be created", level=3)
-        return
+        if not (bench_dir / "apps").is_dir() or not (bench_dir / "sites").is_dir():
+            raise RuntimeError(f"{bench_dir} exists but is not a valid Bench directory")
+        cprint("Bench already exists. Reusing it", level=3)
+    else:
+        env = os.environ.copy()
+        if args.py_version:
+            env["PYENV_VERSION"] = args.py_version
 
-    env = os.environ.copy()
-    if args.py_version:
-        env["PYENV_VERSION"] = args.py_version
-
-    _run(
-        ["/bin/bash", "-i", "-c", _bench_init_command(args)],
-        env=env,
-        cwd=workspace,
-    )
+        _run(
+            ["/bin/bash", "-i", "-c", _bench_init_command(args)],
+            env=env,
+            cwd=workspace,
+        )
 
     cprint("Configuring Bench ...", level=2)
     cprint(f"Setting db_type to {args.db_type}", level=3)
@@ -221,6 +225,7 @@ def _new_site_command(args: argparse.Namespace, apps):
     command = [
         "bench",
         "new-site",
+        "--set-default",
         f"--db-host={database['host']}",
         f"--db-type={args.db_type}",
         f"--db-root-username={database['root_username']}",
@@ -228,7 +233,7 @@ def _new_site_command(args: argparse.Namespace, apps):
         f"--admin-password={args.admin_password}",
     ]
     if args.db_type == "mariadb":
-        command[2:2] = [
+        command[3:3] = [
             "--force",
             f"--db-name={args.db_name}",
             f"--db-password={args.db_password}",
@@ -246,6 +251,12 @@ def create_site_in_bench(args: argparse.Namespace) -> None:
 
     cprint(f"Setting db_host to {database['host']}", level=3)
     _set_config(bench_dir, "db_host", database["host"], "-g")
+
+    site_config = bench_dir / "sites" / args.site_name / "site_config.json"
+    if site_config.is_file():
+        cprint(f"Site {args.site_name} already exists. Reusing it", level=3)
+        _run(["bench", "use", args.site_name], cwd=bench_dir)
+        return
 
     command = _new_site_command(args, _installed_apps(bench_dir))
     cprint(f"Creating Site {args.site_name} ...", level=2)

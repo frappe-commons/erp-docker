@@ -21,6 +21,7 @@ development/*
 .devcontainer/*
 !.devcontainer/devcontainer.json
 !.devcontainer/docker-compose.yml
+!.devcontainer/start-development.sh
 !.devcontainer/setup-tools.sh
 *.code-workspace
 
