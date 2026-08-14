@@ -1,10 +1,6 @@
 {
   "name": "Frappe Bench",
-  "forwardPorts": [
-    8000,
-    9000,
-    6787
-  ],
+  "forwardPorts": [8000, 9000, 6787],
   "remoteUser": "frappe",
   "customizations": {
     "vscode": {
@@ -28,6 +24,7 @@
   },
   "dockerComposeFile": "./docker-compose.yml",
   "service": "frappe",
+  "overrideCommand": false,
   "workspaceFolder": "/workspace/development",
   "shutdownAction": "stopCompose",
   "postCreateCommand": "/workspace/.devcontainer/setup-tools.sh",
