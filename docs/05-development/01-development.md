@@ -23,8 +23,8 @@ the Docker daemon. Allocate at least 4 GB of memory to Docker.
 Clone the repository and enter it:
 
 ```shell
-git clone https://github.com/frappe/frappe_docker.git
-cd frappe_docker
+git clone https://github.com/bhickta/erp-docker.git srv
+cd srv
 ```
 
 From the repository root, create and start the environment with the same
@@ -72,21 +72,22 @@ The default Bench is initialized from `development/apps.json` on Frappe
 
 ### Defaults
 
-| Setting                | Default           |
-| ---------------------- | ----------------- |
-| Compose project        | `srv-development` |
-| Bench directory        | `frappe-bench`    |
-| Site                   | `srv`             |
-| Frappe branch          | `version-16`      |
-| Administrator password | `admin`           |
-| MariaDB root password  | `123`             |
-| HTTP port              | `8000`            |
-| Socket.IO port         | `9000`            |
+| Setting                | Default            |
+| ---------------------- | ------------------ |
+| Compose project        | `srv_devcontainer` |
+| Bench directory        | `frappe-bench`     |
+| Site                   | `srv`              |
+| Frappe branch          | `version-16`       |
+| Administrator password | `admin`            |
+| MariaDB root password  | `123`              |
+| HTTP port              | `8000`             |
+| Socket.IO port         | `9000`             |
 
 ### Use a `.env` file
 
-Create an ignored `.env` file in the repository root before the first run to
-change the defaults without using shell-specific environment syntax:
+Create an ignored `.devcontainer/.env` file before the first run to change the
+defaults without using shell-specific environment syntax. Compose loads this
+file because it lives beside `.devcontainer/docker-compose.yml`:
 
 ```dotenv
 COMPOSE_PROJECT_NAME=my-frappe-development
@@ -158,11 +159,13 @@ Press `Ctrl+C` to stop following logs; the containers continue running.
 ### Open a development shell
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml exec frappe bash
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe frappe bash
 ```
 
 The repository is mounted at `/workspace`, and the development workspace is
-`/workspace/development`.
+`/workspace/development`. The explicit user and home directory keep files
+owned by the development user; omitting them opens a root shell because the
+container initially starts as root to align native Linux file ownership.
 
 ### Run Bench commands from the host
 
@@ -170,15 +173,15 @@ Use Compose's `--workdir` option so Bench runs from the correct directory. For
 the default Bench and site:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench --site srv migrate
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site srv migrate
 ```
 
 Other useful examples:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench --site srv console
-docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench --site srv backup --with-files
-docker compose -f .devcontainer/docker-compose.yml exec --workdir /workspace/development/frappe-bench frappe bench list-sites
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site srv console
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site srv backup --with-files
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench list-sites
 ```
 
 Replace the Bench path and site name when `BENCH_NAME` or `SITE_NAME` is
@@ -241,10 +244,18 @@ VS Code is optional and uses the same Compose project:
 2. Open the repository folder in VS Code.
 3. Run **Dev Containers: Reopen in Container** from the Command Palette.
 
+Dev Containers derives its Compose project name from the repository directory.
+The documented `srv` checkout therefore matches the `srv_devcontainer` default.
+If the repository directory has another name, set `COMPOSE_PROJECT_NAME` in
+`.devcontainer/.env` to `<directory-name>_devcontainer` before the first start.
+This keeps VS Code and host Compose commands attached to the same containers
+and database volume.
+
 VS Code attaches to the `frappe` service and opens `/workspace/development`.
-The checked-in `postCreateCommand` installs the additional development tools.
-Copy `development/vscode-example` to `development/.vscode` if you want the
-example launch and task configurations.
+The checked-in configuration preserves the Compose bootstrap command and its
+`postCreateCommand` installs the additional development tools. Copy
+`development/vscode-example` to `development/.vscode` if you want the example
+launch and task configurations.
 
 The current Dev Container configuration uses `shutdownAction: stopCompose`, so
 closing the Dev Container may stop the development services. Run the quick-start
@@ -282,7 +293,7 @@ Frappe health check allows up to 30 minutes for initial setup.
 
 ### A host port is already allocated
 
-Set unused ports in the root `.env` file, then run the quick-start command
+Set unused ports in `.devcontainer/.env`, then run the quick-start command
 again:
 
 ```dotenv

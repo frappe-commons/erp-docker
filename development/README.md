@@ -20,12 +20,12 @@ Common host commands:
 docker compose -f .devcontainer/docker-compose.yml logs --follow frappe
 
 # Open a shell in this workspace
-docker compose -f .devcontainer/docker-compose.yml exec frappe bash
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe frappe bash
 
 # Check service health
 docker compose -f .devcontainer/docker-compose.yml ps
 ```
 
-Configuration belongs in the ignored `.env` file at the repository root. Read
-the [complete development environment guide](../docs/05-development/01-development.md)
+Configuration belongs in the ignored `.devcontainer/.env` file. Read the
+[complete development environment guide](../docs/05-development/01-development.md)
 before changing credentials, updating images, or resetting persistent data.

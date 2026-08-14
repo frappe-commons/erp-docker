@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-srv-development}
+name: ${COMPOSE_PROJECT_NAME:-srv_devcontainer}
 
 services:
   mariadb:

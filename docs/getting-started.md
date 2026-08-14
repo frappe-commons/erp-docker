@@ -220,7 +220,7 @@ For active development with hot-reload and debugging:
 4. **Open a container shell when needed:**
 
    ```bash
-   docker compose -f .devcontainer/docker-compose.yml exec frappe bash
+   docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe frappe bash
    ```
 
 5. **Access development files:**
@@ -600,11 +600,14 @@ docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 
 VS Code is optional. Install the Dev Containers extension, open the repository,
 and run **Dev Containers: Reopen in Container** to attach to the same service.
+When the repository directory is not named `srv`, first set
+`COMPOSE_PROJECT_NAME=<directory-name>_devcontainer` in `.devcontainer/.env` so
+host Compose commands and VS Code select the same project.
 
 Open a shell without VS Code:
 
 ```bash
-docker compose -f .devcontainer/docker-compose.yml exec frappe bash
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe frappe bash
 ```
 
 ### 3. Custom App Development (30 minutes)
