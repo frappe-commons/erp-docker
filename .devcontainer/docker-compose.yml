@@ -1,0 +1,70 @@
+name: ${COMPOSE_PROJECT_NAME:-srv-development}
+
+services:
+  mariadb:
+    image: docker.io/mariadb:10.6
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-innodb-read-only-compressed # Temporary fix for MariaDB 10.6
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-123}
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:-123}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - mariadb-data:/var/lib/mysql
+
+  redis-cache:
+    image: docker.io/redis:alpine
+
+  redis-queue:
+    image: docker.io/redis:alpine
+
+  frappe:
+    image: docker.io/frappe/bench:latest
+    user: root
+    init: true
+    command: ["bash", "/workspace/.devcontainer/start-development.sh"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    environment:
+      SHELL: /bin/bash
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      BENCH_NAME: ${BENCH_NAME:-frappe-bench}
+      DB_PASSWORD: ${DB_PASSWORD:-123}
+      FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
+      SITE_NAME: ${SITE_NAME:-srv}
+    volumes:
+      - ..:/workspace:cached
+      - tokensave-cargo:/home/frappe/.cargo
+      - tokensave-rustup:/home/frappe/.rustup
+    working_dir: /workspace/development
+    ports:
+      - "${HTTP_PORT:-8000}:8000"
+      - "${SOCKETIO_PORT:-9000}:9000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'curl --fail --silent --header "Host: $${SITE_NAME}" http://127.0.0.1:8000/api/method/ping >/dev/null',
+        ]
+      start_period: 30m
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mariadb-data:
+  tokensave-cargo:
+  tokensave-rustup:

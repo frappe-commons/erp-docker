@@ -197,28 +197,41 @@ docker compose -f pwd.yml logs -f create-site
 
 For active development with hot-reload and debugging:
 
-1. **Copy devcontainer configuration:**
+1. **Start the checked-in development environment:**
 
    ```bash
-   cp -R devcontainer-example .devcontainer
+   docker compose -f .devcontainer/docker-compose.yml up --detach --wait
    ```
 
-2. **Open in VSCode with Dev Containers extension** (Remote - Containers)
+   This creates the Bench and `srv` site when missing, starts the development
+   processes, and waits until Frappe is healthy.
 
-   - VSCode will detect `.devcontainer` and prompt to reopen in container
+2. **Open Frappe:**
 
-3. **Run automated installer:**
+   Visit `http://localhost:8000` and sign in as `Administrator` with password
+   `admin`.
+
+3. **Optionally open the environment in VS Code:**
+
+   - Install the Dev Containers extension.
+   - Open the repository and run **Dev Containers: Reopen in Container**.
+   - VS Code attaches to the same running `frappe` service.
+
+4. **Open a container shell when needed:**
 
    ```bash
-   cd /workspace/development
-   python installer.py
-   # Follow interactive prompts for site name, apps to install, etc.
+   docker compose -f .devcontainer/docker-compose.yml exec frappe bash
    ```
 
-4. **Access development files:**
+5. **Access development files:**
+
    ```
    development/frappe-bench/  # Your live development environment
    ```
+
+See the [complete development environment guide](05-development/01-development.md)
+for configuration, daily commands, persistence, troubleshooting, and reset
+instructions.
 
 ### Development File Locations
 
@@ -230,7 +243,7 @@ development/
 │   │   ├── erpnext/       # ERPNext application (if installed)
 │   │   └── my_custom_app/ # Your custom apps (edit freely)
 │   ├── sites/             # Multi-tenant sites
-│   │   ├── development.localhost/     # Default dev site
+│   │   ├── srv/                       # Default dev site
 │   │   │   ├── site_config.json      # Site-specific config
 │   │   │   └── private/files/        # Uploaded files
 │   │   └── common_site_config.json   # Shared configuration
@@ -243,8 +256,8 @@ development/
 ### Common Development Commands
 
 ```bash
-# Inside container
-bench start  # Start development server with hot-reload
+# Inside the container; Compose already runs the development server
+cd /workspace/development/frappe-bench
 
 # Database operations
 bench migrate  # Run database migrations
@@ -571,34 +584,27 @@ docker compose -f pwd.yml logs -f create-site
 docker compose -f pwd.yml down -v
 ```
 
-### 2. Development Environment (15 minutes)
+### 2. Development Environment
 
 **Goal:** Set up for daily development with hot-reload
 
 ```bash
-# Copy devcontainer config
-cp -R devcontainer-example .devcontainer
-
-# Open in VSCode
-# 1. Install "Dev Containers" extension
-# 2. Command Palette (Ctrl+Shift+P) → "Reopen in Container"
-# 3. Wait for container build (~5 min first time)
-
-# Inside container terminal:
-cd /workspace/development
-python installer.py
-
-# Follow prompts:
-# - Site name: development.localhost
-# - Install ERPNext: Yes
-# - Version: version-15
-
-# Start development server
-cd frappe-bench
-bench start
+# From the cloned repository root
+docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 
 # Access: http://localhost:8000
+# Username: Administrator
+# Password: admin
 # Edit files in: development/frappe-bench/apps/
+```
+
+VS Code is optional. Install the Dev Containers extension, open the repository,
+and run **Dev Containers: Reopen in Container** to attach to the same service.
+
+Open a shell without VS Code:
+
+```bash
+docker compose -f .devcontainer/docker-compose.yml exec frappe bash
 ```
 
 ### 3. Custom App Development (30 minutes)
@@ -616,7 +622,7 @@ bench new-app library_management
 # Follow prompts (title, description, publisher, etc.)
 
 # Install to site
-bench --site development.localhost install-app library_management
+bench --site srv install-app library_management
 
 # Create DocTypes via web UI:
 # 1. Go to: http://localhost:8000
@@ -628,7 +634,7 @@ bench --site development.localhost install-app library_management
 
 # Build and reload
 bench build --app library_management
-# Server auto-reloads (bench start watches for changes)
+# The Compose-managed development server watches for changes
 ```
 
 ### 4. Production Deployment (1 hour)
@@ -914,7 +920,6 @@ bench uninstall-app <app_name>               # Uninstall from default site
 bench list-apps                              # List installed apps
 
 # Development
-bench start                      # Start development server (hot-reload)
 bench build                      # Build frontend assets
 bench build --app <app_name>    # Build specific app
 bench migrate                    # Run database migrations
