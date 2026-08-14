@@ -205,7 +205,7 @@ For active development with hot-reload and debugging:
    ```bash
    cd /workspace/development
    python installer.py
-   # Follow interactive prompts for site name, apps to install, etc.
+   # Use --help to see site, app, version, and database overrides.
    ```
 
 4. **Access development files:**
@@ -581,10 +581,8 @@ cp -R devcontainer-example .devcontainer
 cd /workspace/development
 python installer.py
 
-# Follow prompts:
-# - Site name: development.localhost
-# - Install ERPNext: Yes
-# - Version: version-15
+# The defaults create the `srv` site with the apps from apps.json.
+# For PostgreSQL, use: python installer.py --db-type postgres
 
 # Start development server
 cd frappe-bench

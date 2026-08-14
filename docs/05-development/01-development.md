@@ -243,51 +243,38 @@ Note: To start bench with debugger refer section for debugging.
 
 Most developers work with numerous clients and versions. Moreover, apps may be required to be installed by everyone on the team working for a client.
 
-This is simplified using a script to automate the process of creating a new bench / site and installing the required apps. The `Administrator` password for created sites is `admin`.
+This is simplified using a script that creates a bench and site, configures Redis and the selected database, and installs every app listed in the bench's `apps` directory. The default site is `srv`, and the default `Administrator` password is `admin`.
 
-Sample `apps-example.json` is used by default, it installs erpnext on current stable release. To install custom apps, copy the `apps-example.json` to custom json file and make changes to list of apps. Pass this file to the `installer.py` script.
+The checked-in `apps.json` is used by default. To install custom apps, copy it to another JSON file, edit the app URLs and branches, and pass the new path with `--apps-json`.
 
 > You may have apps in private repos which may require ssh access. You may use SSH from your home directory on linux (configurable in docker-compose.yml).
 
 ```shell
-python installer.py  #pass --db-type postgres for postgresdb
+cd /workspace/development
+python installer.py
+
+# PostgreSQL
+python installer.py --db-type postgres
+
+# Custom database root password (preferred over putting it in shell history)
+DB_PASSWORD=change-me python installer.py
 ```
 
-For command help
+For the complete, current option list, run:
 
 ```shell
 python installer.py --help
-usage: installer.py [-h] [-j APPS_JSON] [-b BENCH_NAME] [-s SITE_NAME] [-r FRAPPE_REPO] [-t FRAPPE_BRANCH] [-p PY_VERSION] [-n NODE_VERSION] [-v] [-a ADMIN_PASSWORD] [-d DB_TYPE]
-
-options:
-  -h, --help            show this help message and exit
-  -j APPS_JSON, --apps-json APPS_JSON
-                        Path to apps.json, default: apps-example.json
-  -b BENCH_NAME, --bench-name BENCH_NAME
-                        Bench directory name, default: frappe-bench
-  -s SITE_NAME, --site-name SITE_NAME
-                        Site name, should end with .localhost, default: development.localhost
-  -r FRAPPE_REPO, --frappe-repo FRAPPE_REPO
-                        frappe repo to use, default: https://github.com/frappe/frappe
-  -t FRAPPE_BRANCH, --frappe-branch FRAPPE_BRANCH
-                        frappe repo to use, default: version-15
-  -p PY_VERSION, --py-version PY_VERSION
-                        python version, default: Not Set
-  -n NODE_VERSION, --node-version NODE_VERSION
-                        node version, default: Not Set
-  -v, --verbose         verbose output
-  -a ADMIN_PASSWORD, --admin-password ADMIN_PASSWORD
-                        admin password for site, default: admin
-  -d DB_TYPE, --db-type DB_TYPE
-                        Database type to use (e.g., mariadb or postgres)
 ```
 
 A new bench and / or site is created for the client with following defaults.
 
+- Database type: `mariadb` (supported values: `mariadb`, `postgres`)
 - MariaDB root password: `123`
+- MariaDB site database name: `srv`
+- MariaDB site database password: `1212`
 - Admin password: `admin`
 
-> To use Postegres DB, comment the mariabdb service and uncomment postegres service.
+Use `--db-root-password`, `--db-name`, `--db-password`, and `--admin-password` to override these values. The `DB_PASSWORD` environment variable also overrides the root-password default. The database service and credentials must match the active Compose configuration.
 
 ### Start Frappe with Visual Studio Code Python Debugging
 
