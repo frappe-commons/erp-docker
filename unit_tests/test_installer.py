@@ -26,11 +26,11 @@ def test_parser_rejects_unknown_database():
         parse_args("--db-type", "sqlite")
 
 
-def test_parser_defaults_match_checked_in_apps():
+def test_parser_defaults_to_frappe_only():
     args = parse_args()
 
     assert args.frappe_branch == "version-16"
-    assert args.apps_json == "apps.json"
+    assert args.apps_json is None
 
 
 def test_existing_bench_is_reconfigured_without_initialization(tmp_path, monkeypatch):
@@ -89,10 +89,26 @@ def test_bench_init_quotes_user_supplied_values(tmp_path, monkeypatch):
         "--skip-redis-config-generation",
         "--frappe-path=https://github.com/frappe/frappe",
         "--frappe-branch=branch name",
-        "--apps_path=apps.json",
         "bench dir",
     ]
     assert all(call[1]["check"] is True for call in calls)
+
+
+def test_bench_init_accepts_optional_apps_json(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.init_bench_if_not_exist(
+        parse_args("--apps-json", "custom apps.json")
+    )
+
+    init_command = shlex.split(calls[0][0][0][3])
+    assert "--apps_path=custom apps.json" in init_command
 
 
 def test_create_mariadb_site_with_sorted_apps(tmp_path, monkeypatch):

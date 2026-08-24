@@ -3,6 +3,8 @@
 This directory is mounted at `/workspace/development` inside the `frappe`
 container. The one-command bootstrap creates the default Bench in
 `development/frappe-bench`; generated Bench files remain ignored by Git.
+The default setup installs only the Frappe framework. An apps JSON file is
+optional; see the complete guide for the ERPNext example and custom app lists.
 
 From the repository root, start or resume the environment:
 

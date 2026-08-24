@@ -50,6 +50,7 @@ def test_devcontainer_default_project_matches_documented_checkout(tmp_path):
     config = render_compose_config(tmp_path)
 
     assert config["name"] == "srv_devcontainer"
+    assert config["services"]["frappe"]["environment"]["APPS_JSON"] == ""
 
 
 def test_devcontainer_preserves_compose_startup_command():
@@ -66,6 +67,7 @@ def test_devcontainer_env_is_loaded_from_compose_directory(tmp_path):
             "HTTP_PORT": "18080",
             "SOCKETIO_PORT": "19090",
             "SITE_NAME": "compose-test.localhost",
+            "APPS_JSON": "apps.json",
         },
     )
 
@@ -73,6 +75,7 @@ def test_devcontainer_env_is_loaded_from_compose_directory(tmp_path):
     assert config["services"]["frappe"]["environment"]["SITE_NAME"] == (
         "compose-test.localhost"
     )
+    assert config["services"]["frappe"]["environment"]["APPS_JSON"] == "apps.json"
     published_ports = {
         port["target"]: str(port["published"])
         for port in config["services"]["frappe"]["ports"]

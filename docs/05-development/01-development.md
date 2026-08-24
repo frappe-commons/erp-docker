@@ -34,9 +34,8 @@ command on every supported host:
 docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 ```
 
-The first run pulls container images and clones the configured Frappe apps, so
-it can take several minutes. The command returns when the Frappe health check
-passes.
+The first run pulls container images and clones the Frappe framework, so it can
+take several minutes. The command returns when the Frappe health check passes.
 
 Open `http://localhost:8000` and sign in with:
 
@@ -65,8 +64,8 @@ The `frappe` service runs `.devcontainer/start-development.sh`, which:
 4. Creates the `srv` site when missing, or selects the existing site.
 5. Starts the Bench development processes.
 
-The default Bench is initialized from `development/apps.json` on Frappe
-`version-16`.
+By default, the Bench contains only the Frappe framework on `version-16`.
+An optional apps JSON file can add ERPNext or other apps during the first run.
 
 ## Configure the environment
 
@@ -78,6 +77,7 @@ The default Bench is initialized from `development/apps.json` on Frappe
 | Bench directory        | `frappe-bench`     |
 | Site                   | `srv`              |
 | Frappe branch          | `version-16`       |
+| Additional apps        | None               |
 | Administrator password | `admin`            |
 | MariaDB root password  | `123`              |
 | HTTP port              | `8000`             |
@@ -106,6 +106,7 @@ SOCKETIO_PORT=9010
 | `BENCH_NAME`           | Selects or creates `development/<BENCH_NAME>`       |
 | `SITE_NAME`            | Selects an existing site or creates a new site      |
 | `FRAPPE_BRANCH`        | Applies only when a new Bench is created            |
+| `APPS_JSON`            | Optional app-list path used for a new Bench          |
 | `ADMIN_PASSWORD`       | Applies only when a new site is created             |
 | `DB_PASSWORD`          | Initializes MariaDB and authenticates site creation |
 | `HTTP_PORT`            | Publishes the Frappe web server on the host         |
@@ -219,9 +220,29 @@ both its files and its database.
 
 ## Work with apps
 
-For a brand-new environment, edit `development/apps.json` before the first run
-to control which apps Bench downloads. Changing that file later does not alter
-an existing Bench automatically.
+The default quick start creates a framework-only Frappe Bench and does not
+require an `apps.json` file.
+
+To include ERPNext in a brand-new environment, copy the checked-in example to
+an ignored local file:
+
+```shell
+cp development/apps-example.json development/apps.json
+```
+
+Then add its path, relative to `development/`, to `.devcontainer/.env` before
+the first start:
+
+```dotenv
+APPS_JSON=apps.json
+```
+
+Edit the local file to add, remove, or change apps and branches. You can also
+point `APPS_JSON` at another file reachable inside the container. The file must
+use the format accepted by `bench init --apps_path`.
+
+`APPS_JSON` applies only when the Bench is first created. Changing the variable
+or file later does not alter an existing Bench automatically.
 
 For an existing Bench, open a development shell and use Bench directly:
 

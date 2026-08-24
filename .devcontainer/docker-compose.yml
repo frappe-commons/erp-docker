@@ -39,6 +39,7 @@ services:
       redis-queue:
         condition: service_started
     environment:
+      APPS_JSON: ${APPS_JSON:-}
       SHELL: /bin/bash
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       BENCH_NAME: ${BENCH_NAME:-frappe-bench}

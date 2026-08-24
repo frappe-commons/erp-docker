@@ -197,7 +197,9 @@ For active development with hot-reload and debugging:
    ```
 
    This creates the Bench and `srv` site when missing, starts the development
-   processes, and waits until Frappe is healthy.
+   processes, and waits until Frappe is healthy. The default setup contains
+   only the Frappe framework; the complete guide explains how to opt in to
+   ERPNext or other apps before the first run.
 
 2. **Open Frappe:**
 

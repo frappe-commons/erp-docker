@@ -58,9 +58,13 @@ start the complete development environment with the same command:
 docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 ```
 
-Docker pulls the required images, creates MariaDB and Redis, initializes the
-Bench and `srv` site when missing, and waits until Frappe is ready. Open
+Docker pulls the required images, creates MariaDB and Redis, initializes a
+Frappe Bench and `srv` site when missing, and waits until Frappe is ready. Open
 `http://localhost:8000` and sign in as `Administrator` with password `admin`.
+
+The default is a framework-only Frappe environment. To include ERPNext or
+other apps on the first run, configure an optional apps JSON file as described
+in the [development guide](docs/05-development/01-development.md#work-with-apps).
 
 The command is safe to run again: an existing Bench and site are reused. See
 the [complete development environment guide](docs/05-development/01-development.md)

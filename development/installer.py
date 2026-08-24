@@ -57,8 +57,7 @@ def get_args_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-j",
         "--apps-json",
-        help="Path to apps.json (default: apps.json)",
-        default="apps.json",
+        help="Optional path to an apps.json file",
     )
     parser.add_argument(
         "-b",
@@ -165,8 +164,9 @@ def _bench_init_command(args: argparse.Namespace) -> str:
         "--skip-redis-config-generation",
         f"--frappe-path={args.frappe_repo}",
         f"--frappe-branch={args.frappe_branch}",
-        f"--apps_path={args.apps_json}",
     ]
+    if args.apps_json:
+        command.append(f"--apps_path={args.apps_json}")
     if args.verbose:
         command.append("--verbose")
     command.append(args.bench_name)

@@ -56,12 +56,19 @@ fi
 
 cd "$WORKSPACE_FOLDER"
 
-python installer.py \
-  --bench-name "$BENCH_NAME" \
-  --site-name "$SITE_NAME" \
-  --frappe-branch "$FRAPPE_BRANCH" \
-  --db-root-password "$DB_PASSWORD" \
+installer_args=(
+  --bench-name "$BENCH_NAME"
+  --site-name "$SITE_NAME"
+  --frappe-branch "$FRAPPE_BRANCH"
+  --db-root-password "$DB_PASSWORD"
   --admin-password "$ADMIN_PASSWORD"
+)
+
+if [ -n "${APPS_JSON:-}" ]; then
+  installer_args+=(--apps-json "$APPS_JSON")
+fi
+
+python installer.py "${installer_args[@]}"
 
 cd "$BENCH_NAME"
 exec bench start
