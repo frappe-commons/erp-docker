@@ -51,6 +51,52 @@ def test_parser_rejects_a_custom_site_name():
         parse_args("--site-name", "other.localhost")
 
 
+def test_app_source_preflight_checks_configured_branch(tmp_path, monkeypatch):
+    manifest = tmp_path / "apps.json"
+    manifest.write_text(
+        '[{"url": "git@github.com:example/private-app.git", '
+        '"branch": "version-15"}]'
+    )
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: (
+            calls.append((args, kwargs)) or SimpleNamespace(returncode=0)
+        ),
+    )
+
+    installer.validate_app_sources(str(manifest))
+
+    assert calls[0][0][0] == [
+        "git",
+        "ls-remote",
+        "--exit-code",
+        "git@github.com:example/private-app.git",
+        "refs/heads/version-15",
+        "refs/tags/version-15",
+        "refs/tags/version-15^{}",
+    ]
+    assert calls[0][1]["env"]["GIT_TERMINAL_PROMPT"] == "0"
+    assert calls[0][1]["stdin"] is subprocess.DEVNULL
+
+
+def test_app_source_preflight_fails_before_setup(tmp_path, monkeypatch):
+    manifest = tmp_path / "apps.json"
+    manifest.write_text(
+        '[{"url": "git@github.com:example/private-app.git", '
+        '"branch": "missing"}]'
+    )
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=2),
+    )
+
+    with pytest.raises(RuntimeError, match="branch or tag 'missing' does not exist"):
+        installer.validate_app_sources(str(manifest))
+
+
 def test_existing_bench_is_reconfigured_without_initialization(tmp_path, monkeypatch):
     bench_dir = make_bench(tmp_path, "frappe")
     monkeypatch.chdir(tmp_path)

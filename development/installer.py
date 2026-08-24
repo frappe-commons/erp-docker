@@ -51,6 +51,7 @@ def cprint(*args, level: int = 1) -> None:
 def main() -> int:
     args = get_args_parser().parse_args()
     try:
+        validate_app_sources(args.apps_json)
         init_bench_if_not_exist(args)
         configure_app_git_remotes(args)
         create_site_in_bench(args)
@@ -274,6 +275,65 @@ def _manifest_app_name(app: dict) -> str:
     return repository.removesuffix(".git").replace("-", "_")
 
 
+def validate_app_sources(apps_json: str | None) -> None:
+    """Fail before Bench creation when an app repository or ref is unavailable."""
+    if not apps_json:
+        return
+
+    manifest = json.loads(Path(apps_json).read_text(encoding="utf-8"))
+    failures = []
+    git_env = os.environ.copy()
+    git_env["GIT_TERMINAL_PROMPT"] = "0"
+
+    for index, app in enumerate(manifest, start=1):
+        repository = app.get("url")
+        branch = app.get("branch")
+        app_name = _manifest_app_name(app) or f"entry {index}"
+        if not repository:
+            failures.append(f"- {app_name}: repository URL is missing")
+            continue
+
+        cprint(
+            f"Checking Git access for {app_name} ({branch or 'default HEAD'})",
+            level=3,
+        )
+        command = ["git", "ls-remote", "--exit-code", repository]
+        if branch:
+            command.extend(
+                (
+                    f"refs/heads/{branch}",
+                    f"refs/tags/{branch}",
+                    f"refs/tags/{branch}^{{}}",
+                )
+            )
+        result = subprocess.run(
+            command,
+            env=git_env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            continue
+        if result.returncode == 2 and branch:
+            reason = f"branch or tag {branch!r} does not exist"
+        else:
+            reason = "repository is inaccessible with the forwarded host credentials"
+        failures.append(f"- {app_name}: {reason}")
+
+    if failures:
+        details = "\n".join(failures)
+        raise RuntimeError(
+            "App repository preflight failed before Bench creation:\n"
+            f"{details}\n"
+            "Fix access on the host first: verify the URLs/refs, load the required "
+            "keys into the host SSH agent, and confirm the host SSH config and "
+            "known_hosts permit non-interactive Git access. Then rebuild the "
+            "Dev Container."
+        )
+
+
 def _capture(command, *, cwd: Path, check: bool = True) -> str:
     result = subprocess.run(
         command,
@@ -310,7 +370,10 @@ def configure_app_git_remotes(args: argparse.Namespace) -> None:
             if not remote_url:
                 remote_url = manifest_urls.get(app_dir.name)
             if not remote_url:
-                cprint(f"No Git source found for {app_dir.name}; skipping origin", level=3)
+                cprint(
+                    f"No Git source found for {app_dir.name}; skipping origin",
+                    level=3,
+                )
                 continue
             _run(["git", "remote", "add", "origin", remote_url], cwd=app_dir)
             origin_added = True
