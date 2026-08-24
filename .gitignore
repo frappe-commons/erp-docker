@@ -28,6 +28,7 @@ development/*
 # Python
 *.pyc
 __pycache__
+.pytest_cache/
 venv
 
 # NodeJS
