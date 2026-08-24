@@ -59,8 +59,9 @@ docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 ```
 
 Docker pulls the required images, creates MariaDB and Redis, initializes a
-Frappe Bench and `srv` site when missing, and waits until Frappe is ready. Open
-`http://localhost:8000` and sign in as `Administrator` with password `admin`.
+Frappe Bench and `development.localhost` site when missing, and waits until
+Frappe is ready. Open `http://localhost:8000` and sign in as `Administrator`
+with password `admin`.
 
 The default is a framework-only Frappe environment. To include ERPNext or
 other apps on the first run, configure an optional apps JSON file as described

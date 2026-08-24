@@ -31,6 +31,9 @@ def test_parser_defaults_to_frappe_only():
 
     assert args.frappe_branch == "version-16"
     assert args.apps_json is None
+    assert args.site_name == "development.localhost"
+    assert args.db_name is None
+    assert args.db_password is None
 
 
 def test_existing_bench_is_reconfigured_without_initialization(tmp_path, monkeypatch):
@@ -136,8 +139,6 @@ def test_create_mariadb_site_with_sorted_apps(tmp_path, monkeypatch):
         "new-site",
         "--set-default",
         "--force",
-        "--db-name=srv",
-        "--db-password=1212",
         "--no-mariadb-socket",
         "--db-host=mariadb",
         "--db-type=mariadb",
@@ -146,11 +147,33 @@ def test_create_mariadb_site_with_sorted_apps(tmp_path, monkeypatch):
         "--admin-password=admin",
         "--install-app=erpnext",
         "--install-app=payments",
-        "srv",
+        "development.localhost",
     ]
     assert all(
         call[1] == {"cwd": bench_dir, "env": None, "check": True} for call in calls
     )
+
+
+def test_create_mariadb_site_accepts_explicit_database_credentials(
+    tmp_path, monkeypatch
+):
+    bench_dir = make_bench(tmp_path, "frappe")
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.create_site_in_bench(
+        parse_args("--db-name", "custom_db", "--db-password", "custom_password")
+    )
+
+    command = calls[1][0][0]
+    assert "--db-name=custom_db" in command
+    assert "--db-password=custom_password" in command
+    assert calls[1][1]["cwd"] == bench_dir
 
 
 def test_create_postgres_site_uses_postgres_credentials(tmp_path, monkeypatch):
@@ -172,13 +195,13 @@ def test_create_postgres_site_uses_postgres_credentials(tmp_path, monkeypatch):
     assert "--db-root-username=postgres" in command
     assert "--force" not in command
     assert not any(arg.startswith("--db-name=") for arg in command)
-    assert command[-1] == "srv"
+    assert command[-1] == "development.localhost"
     assert calls[1][1]["cwd"] == bench_dir
 
 
 def test_existing_site_is_preserved(tmp_path, monkeypatch):
     bench_dir = make_bench(tmp_path, "frappe", "erpnext")
-    site_dir = bench_dir / "sites" / "srv"
+    site_dir = bench_dir / "sites" / "development.localhost"
     site_dir.mkdir(parents=True)
     (site_dir / "site_config.json").write_text("{}")
     monkeypatch.chdir(tmp_path)
@@ -199,7 +222,7 @@ def test_existing_site_is_preserved(tmp_path, monkeypatch):
         "db_host",
         "mariadb",
     ]
-    assert calls[1][0][0] == ["bench", "use", "srv"]
+    assert calls[1][0][0] == ["bench", "use", "development.localhost"]
 
 
 def test_subprocess_failures_are_reported_without_secrets(monkeypatch, capsys):

@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-srv_devcontainer}
+name: ${COMPOSE_PROJECT_NAME:-frappe_development}
 
 services:
   mariadb:
@@ -45,11 +45,9 @@ services:
       BENCH_NAME: ${BENCH_NAME:-frappe-bench}
       DB_PASSWORD: ${DB_PASSWORD:-123}
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
-      SITE_NAME: ${SITE_NAME:-srv}
+      SITE_NAME: ${SITE_NAME:-development.localhost}
     volumes:
       - ..:/workspace:cached
-      - tokensave-cargo:/home/frappe/.cargo
-      - tokensave-rustup:/home/frappe/.rustup
     working_dir: /workspace/development
     ports:
       - "${HTTP_PORT:-8000}:8000"
@@ -67,5 +65,3 @@ services:
 
 volumes:
   mariadb-data:
-  tokensave-cargo:
-  tokensave-rustup:

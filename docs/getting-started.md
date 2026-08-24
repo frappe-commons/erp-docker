@@ -196,10 +196,10 @@ For active development with hot-reload and debugging:
    docker compose -f .devcontainer/docker-compose.yml up --detach --wait
    ```
 
-   This creates the Bench and `srv` site when missing, starts the development
-   processes, and waits until Frappe is healthy. The default setup contains
-   only the Frappe framework; the complete guide explains how to opt in to
-   ERPNext or other apps before the first run.
+   This creates the Bench and `development.localhost` site when missing, starts
+   the development processes, and waits until Frappe is healthy. The default
+   setup contains only the Frappe framework; the complete guide explains how
+   to opt in to ERPNext or other apps before the first run.
 
 2. **Open Frappe:**
 
@@ -238,7 +238,7 @@ development/
 │   │   ├── erpnext/       # ERPNext application (if installed)
 │   │   └── my_custom_app/ # Your custom apps (edit freely)
 │   ├── sites/             # Multi-tenant sites
-│   │   ├── srv/                       # Default dev site
+│   │   ├── development.localhost/     # Default dev site
 │   │   │   ├── site_config.json      # Site-specific config
 │   │   │   └── private/files/        # Uploaded files
 │   │   └── common_site_config.json   # Shared configuration
@@ -595,9 +595,8 @@ docker compose -f .devcontainer/docker-compose.yml up --detach --wait
 
 VS Code is optional. Install the Dev Containers extension, open the repository,
 and run **Dev Containers: Reopen in Container** to attach to the same service.
-When the repository directory is not named `srv`, first set
-`COMPOSE_PROJECT_NAME=<directory-name>_devcontainer` in `.devcontainer/.env` so
-host Compose commands and VS Code select the same project.
+The explicit Compose project name keeps VS Code and host Compose commands on
+the same containers regardless of the checkout directory.
 
 Open a shell without VS Code:
 
@@ -620,7 +619,7 @@ bench new-app library_management
 # Follow prompts (title, description, publisher, etc.)
 
 # Install to site
-bench --site srv install-app library_management
+bench --site development.localhost install-app library_management
 
 # Create DocTypes via web UI:
 # 1. Go to: http://localhost:8000
