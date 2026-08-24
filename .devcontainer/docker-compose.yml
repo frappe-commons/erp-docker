@@ -44,6 +44,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       BENCH_NAME: ${BENCH_NAME:-frappe-bench}
       DB_PASSWORD: ${DB_PASSWORD:-123}
+      FRAPPE_API_TOKEN: ${FRAPPE_API_TOKEN:-}
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
       SITE_NAME: ${SITE_NAME:-development.localhost}
     volumes:

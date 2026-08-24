@@ -51,6 +51,7 @@ def test_devcontainer_defaults_are_project_agnostic(tmp_path):
 
     assert config["name"] == "frappe_development"
     assert config["services"]["frappe"]["environment"]["APPS_JSON"] == ""
+    assert config["services"]["frappe"]["environment"]["FRAPPE_API_TOKEN"] == ""
     assert config["services"]["frappe"]["environment"]["SITE_NAME"] == (
         "development.localhost"
     )
@@ -75,6 +76,7 @@ def test_devcontainer_env_is_loaded_from_compose_directory(tmp_path):
             "SOCKETIO_PORT": "19090",
             "SITE_NAME": "compose-test.localhost",
             "APPS_JSON": "apps.json",
+            "FRAPPE_API_TOKEN": "key:secret",
         },
     )
 
@@ -83,6 +85,9 @@ def test_devcontainer_env_is_loaded_from_compose_directory(tmp_path):
         "compose-test.localhost"
     )
     assert config["services"]["frappe"]["environment"]["APPS_JSON"] == "apps.json"
+    assert config["services"]["frappe"]["environment"]["FRAPPE_API_TOKEN"] == (
+        "key:secret"
+    )
     published_ports = {
         port["target"]: str(port["published"])
         for port in config["services"]["frappe"]["ports"]

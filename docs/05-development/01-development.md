@@ -110,6 +110,7 @@ SOCKETIO_PORT=9010
 | `APPS_JSON`            | Optional app-list path used for a new Bench          |
 | `ADMIN_PASSWORD`       | Applies only when a new site is created             |
 | `DB_PASSWORD`          | Initializes MariaDB and authenticates site creation |
+| `FRAPPE_API_TOKEN`     | Optional token used for authenticated backup downloads |
 | `HTTP_PORT`            | Publishes the Frappe web server on the host         |
 | `SOCKETIO_PORT`        | Publishes the Socket.IO service on the host         |
 
@@ -386,6 +387,8 @@ stack as a production deployment.
 GPU access, SSH keys, Codex authentication, and other private host files are
 optional and are not mounted by the portable baseline. Add only the specific
 capabilities you need through a local Compose override suitable for your host.
+Keep backup API tokens in the ignored `.devcontainer/.env` file, never in an
+app manifest or committed configuration.
 
 ## Further reading
 
