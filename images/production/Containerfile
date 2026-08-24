@@ -22,6 +22,8 @@ RUN useradd -ms /bin/bash frappe \
     libharfbuzz0b \
     libpangoft2-1.0-0 \
     libpangocairo-1.0-0 \
+    #Chromium
+    chromium-headless-shell \
     # For backups
     restic \
     gpg \
@@ -43,6 +45,7 @@ RUN useradd -ms /bin/bash frappe \
     && nvm install ${NODE_VERSION} \
     && nvm use v${NODE_VERSION} \
     && npm install -g yarn \
+    && corepack enable pnpm \
     && nvm alias default v${NODE_VERSION} \
     && rm -rf ${NVM_DIR}/.cache \
     && echo 'export NVM_DIR="/home/frappe/.nvm"' >>/home/frappe/.bashrc \
@@ -58,6 +61,7 @@ RUN useradd -ms /bin/bash frappe \
     # Clean up
     && rm -rf /var/lib/apt/lists/* \
     && rm -fr /etc/nginx/sites-enabled/default \
+    && mkdir -p /etc/nginx/snippets \
     && pip3 install frappe-bench \
     # Fixes for non-root nginx and logs to stdout
     && sed -i '/user www-data/d' /etc/nginx/nginx.conf \
@@ -65,12 +69,14 @@ RUN useradd -ms /bin/bash frappe \
     && touch /run/nginx.pid \
     && chown -R frappe:frappe /etc/nginx/conf.d \
     && chown -R frappe:frappe /etc/nginx/nginx.conf \
+    && chown -R frappe:frappe /etc/nginx/snippets \
     && chown -R frappe:frappe /var/log/nginx \
     && chown -R frappe:frappe /var/lib/nginx \
     && chown -R frappe:frappe /run/nginx.pid
 
 COPY resources/core/nginx/nginx-template.conf /templates/nginx/frappe.conf.template
 COPY resources/core/nginx/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
+COPY resources/core/nginx/security_headers.conf /etc/nginx/snippets/security_headers.conf
 
 FROM base AS build
 
@@ -130,11 +136,22 @@ COPY --from=builder --chown=frappe:frappe /home/frappe/frappe-bench /home/frappe
 
 WORKDIR /home/frappe/frappe-bench
 
+# Move assets to image-layer storage
+RUN cp -r /home/frappe/frappe-bench/sites/assets /home/frappe/frappe-bench/assets && \
+  rm -rf /home/frappe/frappe-bench/sites/assets
+
 VOLUME [ \
   "/home/frappe/frappe-bench/sites", \
-  "/home/frappe/frappe-bench/sites/assets", \
   "/home/frappe/frappe-bench/logs" \
 ]
+
+USER root
+# This entrypoint script link build assets of the image to the mounted sites volume at container initialization
+COPY resources/core/main-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+USER frappe
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD [ \
   "/home/frappe/frappe-bench/env/bin/gunicorn", \

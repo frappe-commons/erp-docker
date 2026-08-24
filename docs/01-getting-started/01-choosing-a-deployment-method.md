@@ -1,3 +1,7 @@
+---
+title: Choosing a Method
+---
+
 # Choosing a Deployment or Development Method
 
 This repository (`frappe_docker`) supports **multiple ways to run Frappe using Docker**.
@@ -107,7 +111,7 @@ It uses:
 - The main `compose.yml`
 - Override files from the `overrides/` directory
 
-Detailed instructions are available in [`/docs/02-setup`](../02-setup)
+Detailed instructions are available in [`/docs/02-setup`](../02-setup/01-overview.md)
 
 ### Characteristics
 

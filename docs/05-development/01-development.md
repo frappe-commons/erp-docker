@@ -1,3 +1,7 @@
+---
+title: Local Development
+---
+
 # Local Development with Docker Compose
 
 This repository includes a complete local Frappe development environment for
@@ -250,6 +254,21 @@ reachable inside the container. The file must use the format accepted by
 
 `APPS_JSON` applies only when the Bench is first created. Changing the variable
 or file later does not alter an existing Bench automatically.
+
+## Restore a development backup
+
+Use the most recent database-backup URL from the source site. The restore
+replaces the selected local site's database, runs migrations, and verifies the
+installed apps:
+
+```shell
+docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe /workspace/development/restore-backup.sh BACKUP_URL
+```
+
+Authenticated downloads use `FRAPPE_API_TOKEN` from the ignored
+`.devcontainer/.env` file. The script validates the downloaded archive before
+replacing the database and removes its temporary files afterward. Pass a site
+name as the second argument when restoring a site other than the default.
 
 For an existing Bench, open a development shell and use Bench directly:
 

@@ -23,6 +23,8 @@ RUN apt-get update \
     libharfbuzz0b \
     libpangoft2-1.0-0 \
     libpangocairo-1.0-0 \
+    #Chromium
+    chromium-headless-shell \
     # to work inside the container
     locales \
     build-essential \
