@@ -18,6 +18,12 @@ def make_bench(tmp_path: Path, *apps: str) -> Path:
     apps_dir.mkdir(parents=True)
     for app in apps:
         (apps_dir / app).mkdir()
+    (bench_dir / "env" / "bin").mkdir(parents=True)
+    (bench_dir / "env" / "bin" / "python").touch()
+    (bench_dir / "sites").mkdir()
+    (bench_dir / "sites" / "apps.txt").touch()
+    (bench_dir / "sites" / "common_site_config.json").write_text("{}")
+    (bench_dir / "Procfile").write_text("web: bench serve --port 8005\n")
     return bench_dir
 
 
@@ -38,7 +44,6 @@ def test_parser_defaults_to_frappe_only():
 
 def test_existing_bench_is_reconfigured_without_initialization(tmp_path, monkeypatch):
     bench_dir = make_bench(tmp_path, "frappe")
-    (bench_dir / "sites").mkdir()
     monkeypatch.chdir(tmp_path)
     calls = []
     monkeypatch.setattr(
@@ -49,20 +54,30 @@ def test_existing_bench_is_reconfigured_without_initialization(tmp_path, monkeyp
 
     installer.init_bench_if_not_exist(parse_args())
 
-    assert len(calls) == 5
+    assert len(calls) == 7
     assert all(call[0][0][0:2] == ["bench", "set-config"] for call in calls)
+    assert calls[4][0][0][-2:] == ["webserver_port", "8000"]
+    assert calls[5][0][0][-2:] == ["socketio_port", "9000"]
+    assert (bench_dir / "Procfile").read_text() == "web: bench serve --port 8000\n"
 
 
-def test_invalid_existing_bench_fails_clearly(tmp_path, monkeypatch):
-    (tmp_path / "frappe-bench").mkdir()
+def test_incomplete_existing_bench_fails_clearly(tmp_path, monkeypatch):
+    bench_dir = tmp_path / "frappe-bench"
+    (bench_dir / "apps" / "frappe").mkdir(parents=True)
+    (bench_dir / "sites").mkdir()
     monkeypatch.chdir(tmp_path)
 
-    with pytest.raises(RuntimeError, match="not a valid Bench directory"):
+    with pytest.raises(RuntimeError, match="incomplete Bench directory") as error:
         installer.init_bench_if_not_exist(parse_args())
+
+    assert "env/bin/python" in str(error.value)
+    assert "sites/apps.txt" in str(error.value)
+    assert "Move it aside" in str(error.value)
 
 
 def test_bench_init_quotes_user_supplied_values(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(installer, "_set_procfile_web_port", lambda *args: None)
     calls = []
     monkeypatch.setattr(
         installer.subprocess,
@@ -95,10 +110,12 @@ def test_bench_init_quotes_user_supplied_values(tmp_path, monkeypatch):
         "bench dir",
     ]
     assert all(call[1]["check"] is True for call in calls)
+    assert calls[0][1]["env"]["FRAPPE_DOCKER_BUILD"] == "1"
 
 
 def test_bench_init_accepts_optional_apps_json(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(installer, "_set_procfile_web_port", lambda *args: None)
     calls = []
     monkeypatch.setattr(
         installer.subprocess,
@@ -152,6 +169,38 @@ def test_create_mariadb_site_with_sorted_apps(tmp_path, monkeypatch):
     assert all(
         call[1] == {"cwd": bench_dir, "env": None, "check": True} for call in calls
     )
+
+
+def test_create_site_preserves_app_manifest_dependency_order(tmp_path, monkeypatch):
+    make_bench(tmp_path, "frappe", "srv_erp", "erpnext", "demo_erpnext")
+    manifest = tmp_path / "apps.json"
+    manifest.write_text(
+        """[
+          {"url": "https://github.com/frappe/erpnext.git"},
+          {"url": "git@github.com:example/demo-erpnext.git"},
+          {"url": "git@github.com:example/srv-erp.git"}
+        ]"""
+    )
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.create_site_in_bench(parse_args("--apps-json", str(manifest)))
+
+    install_options = [
+        argument
+        for argument in calls[1][0][0]
+        if argument.startswith("--install-app=")
+    ]
+    assert install_options == [
+        "--install-app=erpnext",
+        "--install-app=demo_erpnext",
+        "--install-app=srv_erp",
+    ]
 
 
 def test_create_mariadb_site_accepts_explicit_database_credentials(

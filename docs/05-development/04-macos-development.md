@@ -32,6 +32,17 @@ docker version
 docker compose version
 ```
 
+If the app manifest uses SSH Git URLs, start the host SSH agent, load the
+required key, and verify the Git host is already trusted:
+
+```shell
+ssh-add -l
+ssh -T git@github.com
+```
+
+Compose forwards the agent and mounts host `config` and `known_hosts` files
+read-only. It never mounts the underlying private key files.
+
 ## Clone the shared repository
 
 ```shell
@@ -125,6 +136,17 @@ development/dev-env.sh \
 The command initializes a new Bench and site when missing, then waits until
 Frappe is healthy. Open the configured HTTP port, normally
 `http://localhost:8000`.
+
+To attach VS Code Dev Containers to this same named profile, expose it through
+the filename Compose loads automatically. For the example profile, run from
+the repository root:
+
+```shell
+ln -s example-company.env .devcontainer/.env
+```
+
+Do this before **Dev Containers: Reopen in Container**. If `.env` already
+selects another profile, remove that link first.
 
 ## Restore the latest backup
 

@@ -48,7 +48,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-123}
       FRAPPE_API_TOKEN: ${FRAPPE_API_TOKEN:-}
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
+      GIT_SSH_COMMAND: ssh -o IdentitiesOnly=no
       SITE_NAME: ${SITE_NAME:-development.localhost}
+      SSH_AUTH_SOCK: /run/host-services/ssh-auth.sock
     volumes:
       - ..:/workspace:cached
       # Share host-installed user CLIs without exposing the entire host home.
@@ -57,6 +59,10 @@ services:
       - ${HOME}/.nvm:/opt/host-cli/nvm:ro
       - ${HOME}/.codex:/opt/host-cli/state/codex
       - ${HOME}/.tokensave:/opt/host-cli/state/tokensave
+      # Reuse host SSH routing and agent authentication without mounting keys.
+      - ${SSH_AUTH_SOCK:-/dev/null}:/run/host-services/ssh-auth.sock
+      - ${HOME}/.ssh/config:/home/frappe/.ssh/config:ro
+      - ${HOME}/.ssh/known_hosts:/home/frappe/.ssh/known_hosts:ro
       # Host-built ELF CLIs may require a newer glibc than the image provides.
       - /lib/x86_64-linux-gnu:/opt/host-cli/lib:ro
     working_dir: /workspace/development

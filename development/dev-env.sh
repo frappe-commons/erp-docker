@@ -129,9 +129,11 @@ restore_latest() {
   compose exec \
     --user frappe \
     --env HOME=/home/frappe \
-    --workdir /workspace/development/frappe-bench \
+    --workdir /workspace/development \
     frappe \
-    /workspace/development/restore-backup.sh \
+    sh -c \
+    'cd -- "$BENCH_NAME"; exec /workspace/development/restore-backup.sh "$1" "$SITE_NAME"' \
+    sh \
     "$backup_url"
 }
 

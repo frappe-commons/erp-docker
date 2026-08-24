@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import os
 import shlex
 import subprocess
@@ -15,12 +16,22 @@ DATABASES = {
     "mariadb": {"host": "mariadb", "root_username": "root"},
     "postgres": {"host": "postgresql", "root_username": "postgres"},
 }
-REDIS_CONFIG = {
+COMMON_BENCH_CONFIG = {
     "redis_cache": "redis://redis-cache:6379",
     "redis_queue": "redis://redis-queue:6379",
     # Kept for backward compatibility with older Frappe releases.
     "redis_socketio": "redis://redis-queue:6379",
+    # Bench otherwise increments these when another Bench directory exists.
+    "webserver_port": "8000",
+    "socketio_port": "9000",
 }
+REQUIRED_BENCH_PATHS = (
+    "apps/frappe",
+    "env/bin/python",
+    "sites/apps.txt",
+    "sites/common_site_config.json",
+    "Procfile",
+)
 SENSITIVE_OPTIONS = {
     "--admin-password",
     "--db-password",
@@ -179,15 +190,62 @@ def _set_config(bench_dir: Path, key: str, value: str, *flags: str) -> None:
     _run(["bench", "set-config", *flags, key, value], cwd=bench_dir)
 
 
+def _set_procfile_web_port(bench_dir: Path, port: int) -> None:
+    procfile = bench_dir / "Procfile"
+    lines = procfile.read_text(encoding="utf-8").splitlines()
+
+    for index, line in enumerate(lines):
+        process, separator, command = line.partition(":")
+        if not separator or process.strip() != "web":
+            continue
+
+        arguments = shlex.split(command)
+        if arguments[:2] != ["bench", "serve"]:
+            continue
+
+        filtered = []
+        skip_next = False
+        for argument in arguments:
+            if skip_next:
+                skip_next = False
+                continue
+            if argument == "--port":
+                skip_next = True
+                continue
+            if argument.startswith("--port="):
+                continue
+            filtered.append(argument)
+
+        filtered.extend(("--port", str(port)))
+        lines[index] = f"web: {shlex.join(filtered)}"
+        procfile.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return
+
+    raise RuntimeError(f"Could not find the Bench web process in {procfile}")
+
+
 def init_bench_if_not_exist(args: argparse.Namespace) -> None:
     workspace = Path.cwd()
     bench_dir = workspace / args.bench_name
     if bench_dir.exists():
-        if not (bench_dir / "apps").is_dir() or not (bench_dir / "sites").is_dir():
-            raise RuntimeError(f"{bench_dir} exists but is not a valid Bench directory")
+        missing_paths = [
+            relative_path
+            for relative_path in REQUIRED_BENCH_PATHS
+            if not (bench_dir / relative_path).exists()
+        ]
+        if missing_paths:
+            missing = ", ".join(missing_paths)
+            raise RuntimeError(
+                f"{bench_dir} is an incomplete Bench directory; missing: {missing}. "
+                "Move it aside and restart initialization."
+            )
         cprint("Bench already exists. Reusing it", level=3)
     else:
         env = os.environ.copy()
+        # Bench otherwise probes and reloads Supervisor after each app install.
+        # The development image includes supervisorctl but does not run a
+        # Supervisor daemon, so that probe exits non-zero during bench init.
+        env["FRAPPE_DOCKER_BUILD"] = "1"
         if args.py_version:
             env["PYENV_VERSION"] = args.py_version
 
@@ -201,21 +259,43 @@ def init_bench_if_not_exist(args: argparse.Namespace) -> None:
     cprint(f"Setting db_type to {args.db_type}", level=3)
     _set_config(bench_dir, "db_type", args.db_type, "-g")
 
-    for key, value in REDIS_CONFIG.items():
+    for key, value in COMMON_BENCH_CONFIG.items():
         cprint(f"Setting {key} to {value}", level=3)
         _set_config(bench_dir, key, value, "-g")
 
     cprint("Enabling developer_mode", level=3)
     _set_config(bench_dir, "developer_mode", "1", "-gp")
 
+    cprint("Setting Procfile web port to 8000", level=3)
+    _set_procfile_web_port(bench_dir, 8000)
 
-def _installed_apps(bench_dir: Path):
+
+def _manifest_app_name(app: dict) -> str:
+    if app.get("app_name"):
+        return app["app_name"]
+
+    repository = app.get("url", "").rstrip("/").rsplit("/", 1)[-1]
+    return repository.removesuffix(".git").replace("-", "_")
+
+
+def _installed_apps(bench_dir: Path, apps_json: str | None = None):
     apps_dir = bench_dir / "apps"
-    return sorted(
+    installed = {
         path.name
         for path in apps_dir.iterdir()
         if path.is_dir() and path.name != "frappe"
-    )
+    }
+    ordered = []
+
+    if apps_json:
+        manifest = json.loads(Path(apps_json).read_text(encoding="utf-8"))
+        for app in manifest:
+            app_name = _manifest_app_name(app)
+            if app_name in installed and app_name not in ordered:
+                ordered.append(app_name)
+
+    ordered.extend(sorted(installed.difference(ordered)))
+    return ordered
 
 
 def _new_site_command(args: argparse.Namespace, apps):
@@ -256,7 +336,7 @@ def create_site_in_bench(args: argparse.Namespace) -> None:
         _run(["bench", "use", args.site_name], cwd=bench_dir)
         return
 
-    command = _new_site_command(args, _installed_apps(bench_dir))
+    command = _new_site_command(args, _installed_apps(bench_dir, args.apps_json))
     cprint(f"Creating Site {args.site_name} ...", level=2)
     _run(command, cwd=bench_dir)
 

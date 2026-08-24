@@ -8,6 +8,9 @@ import pytest
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = REPOSITORY_ROOT / ".devcontainer" / "docker-compose.yml"
 DEVCONTAINER_FILE = REPOSITORY_ROOT / ".devcontainer" / "devcontainer.json"
+DEV_ENV_FILE = REPOSITORY_ROOT / "development" / "dev-env.sh"
+START_DEVELOPMENT_FILE = REPOSITORY_ROOT / ".devcontainer" / "start-development.sh"
+SETUP_HOST_CLI_FILE = REPOSITORY_ROOT / ".devcontainer" / "setup-host-cli.sh"
 
 
 def render_compose_config(tmp_path, env=None):
@@ -55,6 +58,15 @@ def test_devcontainer_defaults_are_project_agnostic(tmp_path):
     assert config["services"]["frappe"]["environment"]["SITE_NAME"] == (
         "development.localhost"
     )
+    assert config["services"]["frappe"]["environment"]["SSH_AUTH_SOCK"] == (
+        "/run/host-services/ssh-auth.sock"
+    )
+    mount_targets = {
+        mount["target"] for mount in config["services"]["frappe"]["volumes"]
+    }
+    assert "/home/frappe/.ssh/config" in mount_targets
+    assert "/home/frappe/.ssh/known_hosts" in mount_targets
+    assert "/run/host-services/ssh-auth.sock" in mount_targets
     assert set(config["volumes"]) == {"mariadb-data"}
 
 
@@ -62,9 +74,26 @@ def test_devcontainer_preserves_compose_startup_command():
     config = json.loads(DEVCONTAINER_FILE.read_text(encoding="utf-8"))
 
     assert config["overrideCommand"] is False
+    assert config["shutdownAction"] == "none"
     assert config["forwardPorts"] == [8000, 9000]
     assert "postCreateCommand" not in config
     assert "remoteEnv" not in config
+
+
+def test_backup_restore_uses_configured_bench_and_site():
+    script = DEV_ENV_FILE.read_text(encoding="utf-8")
+
+    assert 'cd -- "$BENCH_NAME"' in script
+    assert '"$1" "$SITE_NAME"' in script
+    assert "--workdir /workspace/development/frappe-bench" not in script
+
+
+def test_host_cli_bridge_does_not_override_bench_toolchain():
+    startup = START_DEVELOPMENT_FILE.read_text(encoding="utf-8")
+    host_cli_setup = SETUP_HOST_CLI_FILE.read_text(encoding="utf-8")
+
+    assert 'export PATH="${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}:$PATH"' not in startup
+    assert 'shell_hook=\'export PATH="$PATH:${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}"\'' in host_cli_setup
 
 
 def test_devcontainer_env_is_loaded_from_compose_directory(tmp_path):

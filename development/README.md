@@ -39,3 +39,6 @@ mounted. Recreate the `frappe` container after installing or upgrading a CLI.
 Configuration belongs in the ignored `.devcontainer/.env` file. Read the
 [complete development environment guide](../docs/05-development/01-development.md)
 before changing credentials, updating images, or resetting persistent data.
+If configuration is stored in a named profile such as `.devcontainer/srv.env`,
+select it from the repository root with
+`ln -s srv.env .devcontainer/.env` before opening the Dev Container.

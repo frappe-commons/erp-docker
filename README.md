@@ -114,6 +114,18 @@ Save the supplied files under a company profile after cloning. For example:
 Both paths are ignored by Git. Do not rename, commit, paste into an issue, or
 send the `.env` file through an unsecured channel.
 
+The command-line workflow below accepts the named environment file explicitly.
+VS Code Dev Containers instead loads `.devcontainer/.env`. To use the same
+named profile when reopening the repository in a Dev Container, create a
+relative symlink from the repository root:
+
+```sh
+ln -s example-company.env .devcontainer/.env
+```
+
+For example, a profile stored as `.devcontainer/srv.env` uses
+`ln -s srv.env .devcontainer/.env`. Create only one `.env` link at a time.
+
 Install and start [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/),
 then run:
 

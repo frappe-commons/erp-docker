@@ -26,5 +26,5 @@
   "service": "frappe",
   "overrideCommand": false,
   "workspaceFolder": "/workspace/development",
-  "shutdownAction": "stopCompose"
+  "shutdownAction": "none"
 }

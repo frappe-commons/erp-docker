@@ -7,6 +7,7 @@ on:
     paths:
       - .devcontainer/**
       - .gitattributes
+      - development/dev-env.sh
       - development/installer.py
       - development/tests/**
       - tests/requirements.txt
@@ -17,6 +18,7 @@ on:
     paths:
       - .devcontainer/**
       - .gitattributes
+      - development/dev-env.sh
       - development/installer.py
       - development/tests/**
       - tests/requirements.txt

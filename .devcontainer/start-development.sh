@@ -52,7 +52,6 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
 fi
 
 bash /workspace/.devcontainer/setup-host-cli.sh
-export PATH="${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}:$PATH"
 
 cd "$WORKSPACE_FOLDER"
 

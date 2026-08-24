@@ -44,7 +44,15 @@ if [ ! -e /home/frappe/.tokensave ]; then
   ln -s "$host_cli_root/state/tokensave" /home/frappe/.tokensave
 fi
 
-shell_hook='export PATH="${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}:$PATH"'
+legacy_shell_hook='export PATH="${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}:$PATH"'
+bashrc_tmp=$(mktemp)
+awk -v line="$legacy_shell_hook" '$0 != line' /home/frappe/.bashrc >"$bashrc_tmp"
+mv "$bashrc_tmp" /home/frappe/.bashrc
+
+# Keep the image's Python, Node, Yarn, and Bench toolchain ahead of host CLIs.
+# Commands absent from the image (for example codex and tokensave) still fall
+# through to the bridged directory.
+shell_hook='export PATH="$PATH:${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}"'
 if ! grep -Fqx "$shell_hook" /home/frappe/.bashrc; then
   printf '\n%s\n' "$shell_hook" >>/home/frappe/.bashrc
 fi

@@ -105,6 +105,18 @@ HTTP_PORT=8010
 SOCKETIO_PORT=9010
 ```
 
+When configuration is supplied as a named profile, keep that file and link it
+to the Compose filename. Relative symlink targets are resolved inside the
+`.devcontainer` directory, so run this from the repository root:
+
+```shell
+ln -s example-company.env .devcontainer/.env
+```
+
+For `.devcontainer/srv.env`, use
+`ln -s srv.env .devcontainer/.env`. Remove the old `.env` link before selecting
+a different profile. The link and its target are both ignored by Git.
+
 | Variable               | When it is used                                     |
 | ---------------------- | --------------------------------------------------- |
 | `COMPOSE_PROJECT_NAME` | Names and isolates the Compose project and volumes  |
@@ -278,9 +290,10 @@ bench get-app --branch version-16 https://github.com/example/my_app.git
 bench --site development.localhost install-app my_app
 ```
 
-Use matching branches for Frappe and its apps. Private repositories require
-credentials that are accessible inside the container; host SSH keys and other
-credentials are intentionally not mounted by default.
+Use matching branches for Frappe and its apps. For SSH Git URLs, Compose mounts
+the host SSH `config` and `known_hosts` files read-only and forwards the host
+agent socket. Authentication remains in the agent; private key files are not
+mounted. Ensure the required key is visible in `ssh-add -l` before starting.
 
 ## Use VS Code Dev Containers
 
@@ -301,9 +314,10 @@ The checked-in configuration preserves the Compose bootstrap command. Copy
 `development/vscode-example` to `development/.vscode` if you want the example
 launch and task configurations.
 
-The current Dev Container configuration uses `shutdownAction: stopCompose`, so
-closing the Dev Container may stop the development services. Run the quick-start
-command to resume them.
+The Dev Container configuration uses `shutdownAction: none`, so rebuilding,
+reopening, or closing the VS Code window does not stop the Compose project.
+Stop it explicitly with the command in [Stop without deleting data](#stop-without-deleting-data)
+when it is no longer needed.
 
 See [Debugging](02-debugging.md) for debugger setup.
 
@@ -403,9 +417,9 @@ ports may be reachable from other machines depending on Docker and firewall
 configuration. Use strong credentials on shared networks and never use this
 stack as a production deployment.
 
-GPU access, SSH keys, Codex authentication, and other private host files are
-optional and are not mounted by the portable baseline. Add only the specific
-capabilities you need through a local Compose override suitable for your host.
+GPU access and other private host files are not mounted by the portable
+baseline. SSH routing uses read-only host configuration and authentication is
+forwarded through the agent socket; raw SSH private keys remain on the host.
 Keep backup API tokens in the ignored `.devcontainer/.env` file, never in an
 app manifest or committed configuration.
 
