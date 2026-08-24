@@ -70,4 +70,5 @@ fi
 python installer.py "${installer_args[@]}"
 
 cd "$BENCH_NAME"
-exec bench start
+echo "Bench setup complete. Run 'cd $WORKSPACE_FOLDER/$BENCH_NAME && bench start' to start it."
+exec sleep infinity
