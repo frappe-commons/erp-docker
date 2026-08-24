@@ -320,7 +320,12 @@ def configure_app_git_remotes(args: argparse.Namespace) -> None:
             cwd=app_dir,
             check=False,
         ).splitlines()
-        if origin_added or fetch_rules != [full_fetch]:
+        fetch_complete = _capture(
+            ["git", "config", "--bool", "--get", "frappe-docker.all-branches-fetched"],
+            cwd=app_dir,
+            check=False,
+        ) == "true"
+        if origin_added or fetch_rules != [full_fetch] or not fetch_complete:
             cprint(f"Fetching all Git branches for {app_dir.name}", level=3)
             _run(
                 ["git", "config", "--replace-all", "remote.origin.fetch", full_fetch],
@@ -330,6 +335,10 @@ def configure_app_git_remotes(args: argparse.Namespace) -> None:
             if (app_dir / ".git" / "shallow").is_file():
                 fetch_command.insert(2, "--depth=1")
             _run(fetch_command, cwd=app_dir)
+            _run(
+                ["git", "config", "frappe-docker.all-branches-fetched", "true"],
+                cwd=app_dir,
+            )
 
 
 def _installed_apps(bench_dir: Path, apps_json: str | None = None):
