@@ -81,6 +81,48 @@ The full `frappe_docker` documentation is available in [`docs/`](docs/) and publ
 
 > For Docker basics and best practices refer to Docker's [documentation](http://docs.docker.com)
 
+## Company developer onboarding (macOS)
+
+The company administrator sends each developer two local configuration files
+through a secure channel:
+
+- an `apps.json` manifest containing the company's Frappe applications
+- a `.env` file containing the local site configuration and backup credential
+
+For RAPL, save the supplied files at these exact paths after cloning:
+
+```text
+.apps-json/rapl/apps.json
+.devcontainer/.env
+```
+
+Both paths are ignored by Git. Do not rename, commit, paste into an issue, or
+send the `.env` file through an unsecured channel.
+
+Install and start [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/),
+then run:
+
+```sh
+git clone https://github.com/bhickta/erp-docker.git frappe_docker
+cd frappe_docker
+
+# Copy the two supplied files to the paths shown above, then:
+development/dev-env.sh \
+  --apps-json .apps-json/rapl/apps.json \
+  --env-file .devcontainer/.env \
+  validate
+
+development/dev-env.sh \
+  --apps-json .apps-json/rapl/apps.json \
+  --env-file .devcontainer/.env \
+  up
+```
+
+Open `http://localhost:8000` after the environment becomes healthy. See the
+[macOS company setup guide](docs/05-development/04-macos-development.md) for
+backup restoration, status, logs, stopping the environment, and Mac-specific
+troubleshooting.
+
 ## Development quick start
 
 After cloning the repository, macOS, Windows, and Linux users can create and

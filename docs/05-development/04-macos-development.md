@@ -41,6 +41,22 @@ cd frappe_docker
 
 Only `main` is required. Company-specific branches are not part of the setup.
 
+## RAPL developer handoff
+
+A RAPL developer receives two files from the company administrator through a
+secure channel. After cloning, save them without changing their names:
+
+```text
+.apps-json/rapl/apps.json
+.devcontainer/.env
+```
+
+The files are intentionally excluded from Git. The administrator should send
+the repository URL and these two files; the developer can then follow the
+validation, startup, restore, and everyday-command sections below. RAPL users
+substitute `.apps-json/rapl/apps.json` and `.devcontainer/.env` anywhere the
+generic example paths appear.
+
 ## Provide the app manifest
 
 Store the user-provided manifest under the ignored `.apps-json/` directory.
