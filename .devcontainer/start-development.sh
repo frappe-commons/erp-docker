@@ -2,8 +2,8 @@
 set -euo pipefail
 
 WORKSPACE_FOLDER="${WORKSPACE_FOLDER:-/workspace/development}"
-BENCH_NAME="${BENCH_NAME:-frappe-bench}"
-SITE_NAME="${SITE_NAME:-development.localhost}"
+BENCH_NAME=frappe-bench
+SITE_NAME=localhost
 FRAPPE_BRANCH="${FRAPPE_BRANCH:-version-16}"
 DB_PASSWORD="${DB_PASSWORD:-123}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin}"
@@ -44,6 +44,20 @@ if [ "$(id -u)" -eq 0 ]; then
     env HOME=/home/frappe LOGNAME=frappe USER=frappe bash "$0"
 fi
 
+setup_log=/tmp/frappe-bench-setup.log
+setup_marker=/tmp/frappe-bench-setup-complete
+setup_status=/tmp/frappe-bench-setup-status
+rm -f "$setup_log" "$setup_marker" "$setup_status"
+exec > >(tee -a "$setup_log") 2>&1
+
+record_setup_failure() {
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    printf '%s\n' "$status" > "$setup_status"
+  fi
+}
+trap record_setup_failure EXIT
+
 export NVM_DIR="${NVM_DIR:-/home/frappe/.nvm}"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
   # shellcheck disable=SC1091
@@ -54,12 +68,8 @@ fi
 bash /workspace/.devcontainer/setup-host-cli.sh
 
 cd "$WORKSPACE_FOLDER"
-setup_marker=/tmp/frappe-bench-setup-complete
-rm -f "$setup_marker"
 
 installer_args=(
-  --bench-name "$BENCH_NAME"
-  --site-name "$SITE_NAME"
   --frappe-branch "$FRAPPE_BRANCH"
   --db-root-password "$DB_PASSWORD"
   --admin-password "$ADMIN_PASSWORD"
@@ -91,6 +101,8 @@ if [ -n "$backup_source" ]; then
   fi
 fi
 
-touch "$setup_marker"
 echo "Bench setup complete. Run 'cd $WORKSPACE_FOLDER/$BENCH_NAME && bench start' to start it."
+touch "$setup_marker"
+printf '0\n' > "$setup_status"
+trap - EXIT
 exec sleep infinity

@@ -207,7 +207,7 @@ For active development with hot-reload and debugging:
    docker compose -f .devcontainer/docker-compose.yml up --detach --wait
    ```
 
-   This creates the Bench and `development.localhost` site when missing, starts
+   This creates the Bench and `localhost` site when missing, starts
    the development processes, and waits until Frappe is healthy. The default
    setup contains only the Frappe framework; the complete guide explains how
    to opt in to ERPNext or other apps before the first run.
@@ -249,7 +249,7 @@ development/
 │   │   ├── erpnext/       # ERPNext application (if installed)
 │   │   └── my_custom_app/ # Your custom apps (edit freely)
 │   ├── sites/             # Multi-tenant sites
-│   │   ├── development.localhost/     # Default dev site
+│   │   ├── localhost/                 # Default dev site
 │   │   │   ├── site_config.json      # Site-specific config
 │   │   │   └── private/files/        # Uploaded files
 │   │   └── common_site_config.json   # Shared configuration
@@ -630,7 +630,7 @@ bench new-app library_management
 # Follow prompts (title, description, publisher, etc.)
 
 # Install to site
-bench --site development.localhost install-app library_management
+bench --site localhost install-app library_management
 
 # Create DocTypes via web UI:
 # 1. Go to: http://localhost:8000

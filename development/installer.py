@@ -37,6 +37,8 @@ SENSITIVE_OPTIONS = {
     "--db-password",
     "--db-root-password",
 }
+BENCH_NAME = "frappe-bench"
+SITE_NAME = "localhost"
 
 
 def cprint(*args, level: int = 1) -> None:
@@ -69,18 +71,6 @@ def get_args_parser() -> argparse.ArgumentParser:
         "-j",
         "--apps-json",
         help="Optional path to an apps.json file",
-    )
-    parser.add_argument(
-        "-b",
-        "--bench-name",
-        help="Bench directory name (default: frappe-bench)",
-        default="frappe-bench",
-    )
-    parser.add_argument(
-        "-s",
-        "--site-name",
-        help="Site name (default: development.localhost)",
-        default="development.localhost",
     )
     parser.add_argument(
         "-r",
@@ -178,7 +168,7 @@ def _bench_init_command(args: argparse.Namespace) -> str:
         command.append(f"--apps_path={args.apps_json}")
     if args.verbose:
         command.append("--verbose")
-    command.append(args.bench_name)
+    command.append(BENCH_NAME)
 
     bench_command = " ".join(shlex.quote(argument) for argument in command)
     if args.node_version:
@@ -226,7 +216,7 @@ def _set_procfile_web_port(bench_dir: Path, port: int) -> None:
 
 def init_bench_if_not_exist(args: argparse.Namespace) -> None:
     workspace = Path.cwd()
-    bench_dir = workspace / args.bench_name
+    bench_dir = workspace / BENCH_NAME
     if bench_dir.exists():
         missing_paths = [
             relative_path
@@ -319,25 +309,25 @@ def _new_site_command(args: argparse.Namespace, apps):
         command[3:3] = mariadb_options
 
     command.extend(f"--install-app={app}" for app in apps)
-    command.append(args.site_name)
+    command.append(SITE_NAME)
     return command
 
 
 def create_site_in_bench(args: argparse.Namespace) -> None:
-    bench_dir = Path.cwd() / args.bench_name
+    bench_dir = Path.cwd() / BENCH_NAME
     database = DATABASES[args.db_type]
 
     cprint(f"Setting db_host to {database['host']}", level=3)
     _set_config(bench_dir, "db_host", database["host"], "-g")
 
-    site_config = bench_dir / "sites" / args.site_name / "site_config.json"
+    site_config = bench_dir / "sites" / SITE_NAME / "site_config.json"
     if site_config.is_file():
-        cprint(f"Site {args.site_name} already exists. Reusing it", level=3)
-        _run(["bench", "use", args.site_name], cwd=bench_dir)
+        cprint(f"Site {SITE_NAME} already exists. Reusing it", level=3)
+        _run(["bench", "use", SITE_NAME], cwd=bench_dir)
         return
 
     command = _new_site_command(args, _installed_apps(bench_dir, args.apps_json))
-    cprint(f"Creating Site {args.site_name} ...", level=2)
+    cprint(f"Creating Site {SITE_NAME} ...", level=2)
     _run(command, cwd=bench_dir)
 
 

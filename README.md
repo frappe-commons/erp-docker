@@ -126,7 +126,7 @@ cd erp-docker
 # repository with "Dev Containers: Reopen in Container".
 ```
 
-After setup completes, run `cd /workspace/development/$BENCH_NAME && bench start`
+After setup completes, run `cd /workspace/development/frappe-bench && bench start`
 in the container terminal. Open `http://localhost:8000`. See the
 [macOS company setup guide](docs/05-development/04-macos-development.md) for
 backup restoration, status, logs, stopping the environment, and Mac-specific
@@ -142,7 +142,7 @@ docker compose -f .config/docker-compose.yml up --detach --wait
 ```
 
 Docker pulls the required images, creates MariaDB and Redis, and initializes a
-Frappe Bench and `development.localhost` site when missing. It does not start
+Frappe Bench and `localhost` site when missing. It does not start
 Bench automatically. Enter the container, run `bench start` from the Bench
 directory, then open `http://localhost:8000` and sign in as `Administrator`
 with password `admin`.

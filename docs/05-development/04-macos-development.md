@@ -89,8 +89,6 @@ Store the provided environment at `.config/.env`:
 
 ```dotenv
 COMPOSE_PROJECT_NAME=example_company_development
-BENCH_NAME=frappe-bench
-SITE_NAME=example-company.localhost
 FRAPPE_BRANCH=version-16
 ADMIN_PASSWORD=admin
 DB_PASSWORD=change-this-local-password

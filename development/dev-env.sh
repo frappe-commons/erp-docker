@@ -127,7 +127,7 @@ restore_latest() {
     --workdir /workspace/development \
     frappe \
     sh -c \
-    'cd -- "$BENCH_NAME"; exec /workspace/development/restore-backup.sh "$1" "$SITE_NAME"' \
+    'cd -- frappe-bench; exec /workspace/development/restore-backup.sh "$1" localhost' \
     sh \
     "$backup_source"
 }

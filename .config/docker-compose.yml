@@ -45,12 +45,10 @@ services:
       HOST_CLI_PATH: /home/frappe/.host-cli/bin
       SHELL: /bin/bash
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
-      BENCH_NAME: ${BENCH_NAME:-frappe-bench}
       DB_PASSWORD: ${DB_PASSWORD:-123}
       FRAPPE_API_TOKEN: ${FRAPPE_API_TOKEN:-}
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
       GIT_SSH_COMMAND: ssh -o IdentitiesOnly=no
-      SITE_NAME: ${SITE_NAME:-development.localhost}
       SOURCE_SITE_URL: ${SOURCE_SITE_URL:-}
       SSH_AUTH_SOCK: /run/host-services/ssh-auth.sock
     volumes:

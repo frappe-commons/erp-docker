@@ -25,6 +25,7 @@ development/*
 !.devcontainer/devcontainer.json
 !.devcontainer/start-development.sh
 !.devcontainer/setup-host-cli.sh
+!.devcontainer/watch-setup.sh
 *.code-workspace
 
 # Python

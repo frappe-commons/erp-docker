@@ -9,10 +9,12 @@ The Dev Container uses two local configuration files:
 
 Both files are ignored by Git. Place the provided files at those exact paths,
 open the repository in a Dev Container, and wait for Bench setup to finish.
+The Rebuild and Reopen progress view streams the detailed setup log.
+The Bench directory is always `frappe-bench` and its site is always `localhost`.
 Bench does not start automatically; run it from the container terminal:
 
 ```sh
-cd "/workspace/development/$BENCH_NAME"
+cd /workspace/development/frappe-bench
 bench start
 ```
 
@@ -25,7 +27,7 @@ When `.config/.env` defines `SOURCE_SITE_URL` and
 starting Bench:
 
 ```sh
-cd "/workspace/development/$BENCH_NAME"
+cd /workspace/development/frappe-bench
 /workspace/development/restore-backup.sh
 ```
 

@@ -25,6 +25,8 @@
   "dockerComposeFile": "../.config/docker-compose.yml",
   "service": "frappe",
   "overrideCommand": false,
+  "postCreateCommand": "bash /workspace/.devcontainer/watch-setup.sh",
+  "waitFor": "postCreateCommand",
   "workspaceFolder": "/workspace/development",
   "shutdownAction": "none"
 }

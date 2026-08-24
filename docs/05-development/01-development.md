@@ -72,7 +72,7 @@ The `frappe` service runs `.devcontainer/start-development.sh`, which:
 1. Aligns file ownership with the repository owner on native Linux.
 2. Creates `development/frappe-bench` when no Bench exists.
 3. Configures MariaDB, Redis, and developer mode.
-4. Creates the `development.localhost` site when missing, or selects the
+4. Creates the `localhost` site when missing, or selects the
    existing site.
 5. Keeps the container ready for a developer to run `bench start` manually.
 
@@ -87,7 +87,7 @@ An optional apps JSON file can add ERPNext or other apps during the first run.
 | ---------------------- | ----------------------- |
 | Compose project        | `frappe_development`    |
 | Bench directory        | `frappe-bench`          |
-| Site                   | `development.localhost` |
+| Site                   | `localhost`             |
 | Frappe branch          | `version-16`            |
 | Additional apps        | None                    |
 | Administrator password | `admin`                 |
@@ -103,8 +103,6 @@ file because it lives beside `.config/docker-compose.yml`:
 
 ```dotenv
 COMPOSE_PROJECT_NAME=my-frappe-development
-BENCH_NAME=frappe-bench
-SITE_NAME=my-site.localhost
 FRAPPE_BRANCH=version-16
 ADMIN_PASSWORD=change-me
 DB_PASSWORD=change-me-too
@@ -118,8 +116,6 @@ directly at `.config/.env` and `.config/apps.json`.
 | Variable               | When it is used                                     |
 | ---------------------- | --------------------------------------------------- |
 | `COMPOSE_PROJECT_NAME` | Names and isolates the Compose project and volumes  |
-| `BENCH_NAME`           | Selects or creates `development/<BENCH_NAME>`       |
-| `SITE_NAME`            | Selects an existing site or creates a new site      |
 | `FRAPPE_BRANCH`        | Applies only when a new Bench is created            |
 | `APPS_JSON`            | Optional app-list path used for a new Bench          |
 | `BACKUP_URL`           | Optional database backup restored once during setup  |
@@ -192,19 +188,19 @@ Use Compose's `--workdir` option so Bench runs from the correct directory. For
 the default Bench and site:
 
 ```shell
-docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost migrate
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site localhost migrate
 ```
 
 Other useful examples:
 
 ```shell
-docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost console
-docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost backup --with-files
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site localhost console
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site localhost backup --with-files
 docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench list-sites
 ```
 
-Replace the Bench path and site name when `BENCH_NAME` or `SITE_NAME` is
-overridden.
+The Bench path is always `development/frappe-bench` and the site is always
+`localhost`.
 
 ### Stop without deleting data
 
@@ -228,7 +224,7 @@ and named volumes. The next `up --detach --wait` recreates the containers.
 | Data                 | Location or storage                                              | Persists after `down` |
 | -------------------- | ---------------------------------------------------------------- | --------------------- |
 | Repository files     | Host repository, mounted at `/workspace`                         | Yes                   |
-| Bench, apps, sites   | `development/<BENCH_NAME>`                                       | Yes                   |
+| Bench, apps, sites   | `development/frappe-bench`                                       | Yes                   |
 | MariaDB data         | Compose-managed `mariadb-data` named volume                      | Yes                   |
 | Redis state          | Replaceable container storage                                    | No                    |
 
@@ -288,7 +284,7 @@ For an existing Bench, open a development shell and use Bench directly:
 ```shell
 cd frappe-bench
 bench get-app --branch version-16 https://github.com/example/my_app.git
-bench --site development.localhost install-app my_app
+bench --site localhost install-app my_app
 ```
 
 Use matching branches for Frappe and its apps. For SSH Git URLs, Compose mounts
@@ -375,7 +371,7 @@ does not change MariaDB credentials already stored in the volume.
 
 ### The bootstrap says the Bench directory is invalid
 
-The selected `development/<BENCH_NAME>` exists but does not contain both
+The `development/frappe-bench` directory exists but does not contain both
 `apps/` and `sites/`. Inspect or move that directory instead of deleting it;
 it may contain work that should be recovered.
 
@@ -396,7 +392,7 @@ To reset everything:
    docker compose -f .config/docker-compose.yml stop
    ```
 
-2. Move `development/<BENCH_NAME>` outside the repository as a recoverable
+2. Move `development/frappe-bench` outside the repository as a recoverable
    backup. Do not move it while the services are running.
 3. Remove the containers and all Compose-managed volumes.
 
@@ -408,7 +404,7 @@ To reset everything:
 
 `down --volumes` permanently removes MariaDB data for the selected Compose
 project. Confirm the active `COMPOSE_PROJECT_NAME` before running it. Keep any
-Bench backup outside `development/<BENCH_NAME>`, because that directory must be
+Bench backup outside `development/frappe-bench`, because that directory must be
 absent for a clean bootstrap.
 
 ## Security and host-specific features
