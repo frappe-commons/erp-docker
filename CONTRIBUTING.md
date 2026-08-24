@@ -91,7 +91,7 @@ Install Python test requirements:
 ```shell
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements-test.txt
+pip install -r tests/requirements.txt
 ```
 
 Run pytest:

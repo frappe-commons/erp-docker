@@ -33,17 +33,21 @@ Use it if you want to:
 
 ```bash
 frappe_docker/
-├── docs/                 # Complete documentation
-├── overrides/            # Docker Compose configurations for different scenarios
-├── compose.yaml          # Base Compose File for production setups
-├── pwd.yml               # Single Compose File for quick disposable demo
-├── images/               # Dockerfiles for building Frappe images
-├── development/          # Development workspace and bootstrap installer
 ├── .devcontainer/        # Cross-platform development environment
-└── resources/            # Helper scripts and configuration templates
+├── development/          # Development workspace, bootstrap, and unit tests
+├── docs/                 # Complete documentation and VitePress site
+├── images/               # Docker image definitions
+├── overrides/            # Optional production Compose configurations
+├── resources/            # Runtime scripts and configuration templates
+├── tests/                # Integration tests and shared test dependencies
+├── compose.yaml          # Canonical production Compose entry point
+├── pwd.yml               # Disposable single-file demo
+└── docker-bake.hcl       # Canonical image-build definition
 ```
 
 > This section describes the structure of **this repository**, not the Frappe framework itself.
+> Root-level files are limited to standard project metadata and entry points
+> discovered there by Docker, GitHub, Git, pre-commit, and test tooling.
 
 ### Key Components
 

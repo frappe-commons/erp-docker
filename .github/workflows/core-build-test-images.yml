@@ -102,7 +102,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m venv venv
-          venv/bin/pip install -r requirements-test.txt
+          venv/bin/pip install -r tests/requirements.txt
 
       - name: Test
         run: venv/bin/pytest --color=yes
