@@ -210,6 +210,24 @@ def test_create_site_preserves_app_manifest_dependency_order(tmp_path, monkeypat
     ]
 
 
+def test_backup_site_creation_skips_manifest_apps(tmp_path, monkeypatch):
+    bench_dir = make_bench(tmp_path, "frappe", "erpnext", "srv_erp")
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.create_site_in_bench(parse_args("--skip-app-install"))
+
+    command = calls[1][0][0]
+    assert command[-1] == "localhost"
+    assert not any(argument.startswith("--install-app=") for argument in command)
+    assert calls[1][1]["cwd"] == bench_dir
+
+
 def test_create_mariadb_site_accepts_explicit_database_credentials(
     tmp_path, monkeypatch
 ):

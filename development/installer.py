@@ -73,6 +73,11 @@ def get_args_parser() -> argparse.ArgumentParser:
         help="Optional path to an apps.json file",
     )
     parser.add_argument(
+        "--skip-app-install",
+        action="store_true",
+        help="Create a base site without installing manifest apps",
+    )
+    parser.add_argument(
         "-r",
         "--frappe-repo",
         help="Frappe repository URL",
@@ -326,7 +331,8 @@ def create_site_in_bench(args: argparse.Namespace) -> None:
         _run(["bench", "use", SITE_NAME], cwd=bench_dir)
         return
 
-    command = _new_site_command(args, _installed_apps(bench_dir, args.apps_json))
+    apps = [] if args.skip_app_install else _installed_apps(bench_dir, args.apps_json)
+    command = _new_site_command(args, apps)
     cprint(f"Creating Site {SITE_NAME} ...", level=2)
     _run(command, cwd=bench_dir)
 

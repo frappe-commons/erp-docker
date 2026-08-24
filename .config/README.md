@@ -49,5 +49,7 @@ BACKUP_URL=https://source.example.com/backups/database.sql.gz
 `BACKUP_URL` takes precedence over `SOURCE_SITE_URL`. The selected source is
 restored once and its digest is recorded locally so container restarts do not
 overwrite later database changes. Changing the configured source triggers one
-new restore. After restoration, the local Administrator password is set to
-`ADMIN_PASSWORD`.
+new restore. When a backup is configured, setup creates only the base site
+before restoring, so custom apps are initialized from the backup rather than
+against an empty database. After restoration, the local Administrator password
+is set to `ADMIN_PASSWORD`.

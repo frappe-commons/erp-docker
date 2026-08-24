@@ -93,6 +93,7 @@ def test_devcontainer_waits_for_manual_bench_start():
     assert "touch \"$setup_marker\"" in startup
     assert 'set-admin-password "$ADMIN_PASSWORD"' in startup
     assert ".development-backup-restore" in startup
+    assert 'installer_args+=(--skip-app-install)' in startup
     assert "/tmp/frappe-bench-setup-complete" in compose
 
 

@@ -69,6 +69,7 @@ bash /workspace/.devcontainer/setup-host-cli.sh
 
 cd "$WORKSPACE_FOLDER"
 
+backup_source=${BACKUP_URL:-${SOURCE_SITE_URL:-}}
 installer_args=(
   --frappe-branch "$FRAPPE_BRANCH"
   --db-root-password "$DB_PASSWORD"
@@ -78,12 +79,14 @@ installer_args=(
 if [ -n "${APPS_JSON:-}" ]; then
   installer_args+=(--apps-json "$APPS_JSON")
 fi
+if [ -n "$backup_source" ]; then
+  installer_args+=(--skip-app-install)
+fi
 
 python installer.py "${installer_args[@]}"
 
 cd "$BENCH_NAME"
 
-backup_source=${BACKUP_URL:-${SOURCE_SITE_URL:-}}
 if [ -n "$backup_source" ]; then
   backup_digest=$(printf '%s' "$backup_source" | sha256sum | awk '{print $1}')
   backup_marker="$WORKSPACE_FOLDER/$BENCH_NAME/sites/$SITE_NAME/.development-backup-restore"
