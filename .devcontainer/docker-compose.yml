@@ -40,6 +40,8 @@ services:
         condition: service_started
     environment:
       APPS_JSON: ${APPS_JSON:-}
+      CODEX_HOME: /opt/host-cli/state/codex
+      HOST_CLI_PATH: /home/frappe/.host-cli/bin
       SHELL: /bin/bash
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       BENCH_NAME: ${BENCH_NAME:-frappe-bench}
@@ -49,6 +51,14 @@ services:
       SITE_NAME: ${SITE_NAME:-development.localhost}
     volumes:
       - ..:/workspace:cached
+      # Share host-installed user CLIs without exposing the entire host home.
+      - ${HOME}/.cargo/bin:/opt/host-cli/cargo/bin:ro
+      - ${HOME}/.local/bin:/opt/host-cli/local/bin:ro
+      - ${HOME}/.nvm:/opt/host-cli/nvm:ro
+      - ${HOME}/.codex:/opt/host-cli/state/codex
+      - ${HOME}/.tokensave:/opt/host-cli/state/tokensave
+      # Host-built ELF CLIs may require a newer glibc than the image provides.
+      - /lib/x86_64-linux-gnu:/opt/host-cli/lib:ro
     working_dir: /workspace/development
     ports:
       - "${HTTP_PORT:-8000}:8000"

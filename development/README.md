@@ -29,6 +29,13 @@ docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME
 docker compose -f .devcontainer/docker-compose.yml ps
 ```
 
+Host-installed user CLIs are bridged into the development container from the
+host's NVM, Cargo, and `~/.local/bin` directories. Their launchers are rebuilt
+whenever the container starts, so commands such as `codex` and `tokensave`
+work in an interactive container shell. Codex and TokenSave keep using their
+host state in `~/.codex` and `~/.tokensave`; the rest of the host home is not
+mounted. Recreate the `frappe` container after installing or upgrading a CLI.
+
 Configuration belongs in the ignored `.devcontainer/.env` file. Read the
 [complete development environment guide](../docs/05-development/01-development.md)
 before changing credentials, updating images, or resetting persistent data.

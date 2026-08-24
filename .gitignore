@@ -24,6 +24,7 @@ development/*
 !.devcontainer/devcontainer.json
 !.devcontainer/docker-compose.yml
 !.devcontainer/start-development.sh
+!.devcontainer/setup-host-cli.sh
 *.code-workspace
 
 # Python

@@ -51,6 +51,9 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   nvm use default >/dev/null
 fi
 
+bash /workspace/.devcontainer/setup-host-cli.sh
+export PATH="${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}:$PATH"
+
 cd "$WORKSPACE_FOLDER"
 
 installer_args=(
