@@ -15,6 +15,21 @@
   </p>
 </div>
 
+## Start here for company development
+
+Install and start [Docker Desktop](https://docs.docker.com/desktop/), then clone
+this repository:
+
+```sh
+git clone https://github.com/bhickta/erp-docker.git
+cd erp-docker
+```
+
+Continue with [Company developer onboarding](#company-developer-onboarding-macos).
+Your company administrator will provide the required `apps.json` and `.env`
+files separately through a secure channel. You do not need a company-specific
+Git branch.
+
 ## What is this?
 
 This repository is the official container setup for Frappe applications.
@@ -103,8 +118,8 @@ Install and start [Docker Desktop for Mac](https://docs.docker.com/desktop/setup
 then run:
 
 ```sh
-git clone https://github.com/bhickta/erp-docker.git frappe_docker
-cd frappe_docker
+git clone https://github.com/bhickta/erp-docker.git
+cd erp-docker
 
 # Copy the two supplied files to the paths shown above, then:
 development/dev-env.sh \
