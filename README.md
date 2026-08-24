@@ -89,11 +89,11 @@ through a secure channel:
 - an `apps.json` manifest containing the company's Frappe applications
 - a `.env` file containing the local site configuration and backup credential
 
-For RAPL, save the supplied files at these exact paths after cloning:
+Save the supplied files under a company profile after cloning. For example:
 
 ```text
-.apps-json/rapl/apps.json
-.devcontainer/.env
+.apps-json/example-company/apps.json
+.devcontainer/example-company.env
 ```
 
 Both paths are ignored by Git. Do not rename, commit, paste into an issue, or
@@ -108,13 +108,13 @@ cd frappe_docker
 
 # Copy the two supplied files to the paths shown above, then:
 development/dev-env.sh \
-  --apps-json .apps-json/rapl/apps.json \
-  --env-file .devcontainer/.env \
+  --apps-json .apps-json/example-company/apps.json \
+  --env-file .devcontainer/example-company.env \
   validate
 
 development/dev-env.sh \
-  --apps-json .apps-json/rapl/apps.json \
-  --env-file .devcontainer/.env \
+  --apps-json .apps-json/example-company/apps.json \
+  --env-file .devcontainer/example-company.env \
   up
 ```
 
