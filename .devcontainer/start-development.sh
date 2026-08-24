@@ -73,8 +73,9 @@ python installer.py "${installer_args[@]}"
 
 cd "$BENCH_NAME"
 
-if [ -n "${BACKUP_URL:-}" ]; then
-  backup_digest=$(printf '%s' "$BACKUP_URL" | sha256sum | awk '{print $1}')
+backup_source=${BACKUP_URL:-${SOURCE_SITE_URL:-}}
+if [ -n "$backup_source" ]; then
+  backup_digest=$(printf '%s' "$backup_source" | sha256sum | awk '{print $1}')
   backup_marker="$WORKSPACE_FOLDER/$BENCH_NAME/sites/$SITE_NAME/.development-backup-restore"
   restored_digest=""
   if [ -f "$backup_marker" ]; then
@@ -82,7 +83,7 @@ if [ -n "${BACKUP_URL:-}" ]; then
   fi
 
   if [ "$restored_digest" != "$backup_digest" ]; then
-    /workspace/development/restore-backup.sh "$BACKUP_URL" "$SITE_NAME"
+    /workspace/development/restore-backup.sh "$backup_source" "$SITE_NAME"
     bench --site "$SITE_NAME" set-admin-password "$ADMIN_PASSWORD"
     printf '%s\n' "$backup_digest" > "$backup_marker"
   else

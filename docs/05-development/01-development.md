@@ -276,10 +276,11 @@ docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home
 ```
 
 Authenticated downloads use `FRAPPE_API_TOKEN` from the ignored
-`.config/.env` file. Set `BACKUP_URL` to restore that backup automatically
-during setup. The script records a digest to avoid restoring it again on every
-container restart, and resets the local Administrator password to
-`ADMIN_PASSWORD` afterward. It validates the archive before replacing the
+`.config/.env` file. Set `SOURCE_SITE_URL` to discover and restore its latest
+backup automatically, or set `BACKUP_URL` to select a specific backup.
+`BACKUP_URL` takes precedence. The script records a digest to avoid restoring
+again on every container restart, and resets the local Administrator password
+to `ADMIN_PASSWORD` afterward. It validates the archive before replacing the
 database and removes temporary files afterward.
 
 For an existing Bench, open a development shell and use Bench directly:

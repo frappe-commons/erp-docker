@@ -29,14 +29,23 @@ cd "/workspace/development/$BENCH_NAME"
 /workspace/development/restore-backup.sh
 ```
 
-To restore a specific backup automatically during initial setup, define:
+To discover and restore the latest backup automatically during initial setup,
+define the source site and API token:
+
+```dotenv
+SOURCE_SITE_URL=https://source.example.com
+FRAPPE_API_TOKEN=key:secret
+```
+
+To restore a specific backup instead, define:
 
 ```dotenv
 ADMIN_PASSWORD=1212
 BACKUP_URL=https://source.example.com/backups/database.sql.gz
 ```
 
-The URL is restored once. Its digest is recorded locally so container restarts
-do not overwrite later database changes. Changing `BACKUP_URL` triggers one
+`BACKUP_URL` takes precedence over `SOURCE_SITE_URL`. The selected source is
+restored once and its digest is recorded locally so container restarts do not
+overwrite later database changes. Changing the configured source triggers one
 new restore. After restoration, the local Administrator password is set to
 `ADMIN_PASSWORD`.
