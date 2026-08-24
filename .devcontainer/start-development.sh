@@ -54,6 +54,8 @@ fi
 bash /workspace/.devcontainer/setup-host-cli.sh
 
 cd "$WORKSPACE_FOLDER"
+setup_marker=/tmp/frappe-bench-setup-complete
+rm -f "$setup_marker"
 
 installer_args=(
   --bench-name "$BENCH_NAME"
@@ -70,5 +72,24 @@ fi
 python installer.py "${installer_args[@]}"
 
 cd "$BENCH_NAME"
+
+if [ -n "${BACKUP_URL:-}" ]; then
+  backup_digest=$(printf '%s' "$BACKUP_URL" | sha256sum | awk '{print $1}')
+  backup_marker="$WORKSPACE_FOLDER/$BENCH_NAME/sites/$SITE_NAME/.development-backup-restore"
+  restored_digest=""
+  if [ -f "$backup_marker" ]; then
+    restored_digest=$(sed -n '1p' "$backup_marker")
+  fi
+
+  if [ "$restored_digest" != "$backup_digest" ]; then
+    /workspace/development/restore-backup.sh "$BACKUP_URL" "$SITE_NAME"
+    bench --site "$SITE_NAME" set-admin-password "$ADMIN_PASSWORD"
+    printf '%s\n' "$backup_digest" > "$backup_marker"
+  else
+    echo "Configured backup is already restored; skipping."
+  fi
+fi
+
+touch "$setup_marker"
 echo "Bench setup complete. Run 'cd $WORKSPACE_FOLDER/$BENCH_NAME && bench start' to start it."
 exec sleep infinity

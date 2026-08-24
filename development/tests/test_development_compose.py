@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-COMPOSE_FILE = REPOSITORY_ROOT / ".devcontainer" / "docker-compose.yml"
+COMPOSE_FILE = REPOSITORY_ROOT / ".config" / "docker-compose.yml"
 DEVCONTAINER_FILE = REPOSITORY_ROOT / ".devcontainer" / "devcontainer.json"
 DEV_ENV_FILE = REPOSITORY_ROOT / "development" / "dev-env.sh"
 START_DEVELOPMENT_FILE = REPOSITORY_ROOT / ".devcontainer" / "start-development.sh"
@@ -17,11 +17,11 @@ def render_compose_config(tmp_path, env=None):
     if shutil.which("docker") is None:
         pytest.skip("Docker CLI is not installed")
 
-    devcontainer = tmp_path / ".devcontainer"
-    devcontainer.mkdir()
-    shutil.copy2(COMPOSE_FILE, devcontainer / "docker-compose.yml")
+    config_directory = tmp_path / ".config"
+    config_directory.mkdir()
+    shutil.copy2(COMPOSE_FILE, config_directory / "docker-compose.yml")
     if env is not None:
-        (devcontainer / ".env").write_text(
+        (config_directory / ".env").write_text(
             "\n".join(
                 (
                     *(f"{key}={value}" for key, value in env.items()),
@@ -36,7 +36,7 @@ def render_compose_config(tmp_path, env=None):
             "docker",
             "compose",
             "--file",
-            ".devcontainer/docker-compose.yml",
+            ".config/docker-compose.yml",
             "config",
             "--format",
             "json",
@@ -54,10 +54,12 @@ def test_devcontainer_defaults_are_project_agnostic(tmp_path):
 
     assert config["name"] == "frappe_development"
     assert config["services"]["frappe"]["environment"]["APPS_JSON"] == ""
+    assert config["services"]["frappe"]["environment"]["BACKUP_URL"] == ""
     assert config["services"]["frappe"]["environment"]["FRAPPE_API_TOKEN"] == ""
     assert config["services"]["frappe"]["environment"]["SITE_NAME"] == (
         "development.localhost"
     )
+    assert config["services"]["frappe"]["environment"]["SOURCE_SITE_URL"] == ""
     assert config["services"]["frappe"]["environment"]["SSH_AUTH_SOCK"] == (
         "/run/host-services/ssh-auth.sock"
     )
@@ -78,6 +80,18 @@ def test_devcontainer_preserves_compose_startup_command():
     assert config["forwardPorts"] == [8000, 9000]
     assert "postCreateCommand" not in config
     assert "remoteEnv" not in config
+
+
+def test_devcontainer_waits_for_manual_bench_start():
+    startup = START_DEVELOPMENT_FILE.read_text(encoding="utf-8")
+    compose = COMPOSE_FILE.read_text(encoding="utf-8")
+
+    assert "exec bench start" not in startup
+    assert "exec sleep infinity" in startup
+    assert "touch \"$setup_marker\"" in startup
+    assert 'set-admin-password "$ADMIN_PASSWORD"' in startup
+    assert ".development-backup-restore" in startup
+    assert "/tmp/frappe-bench-setup-complete" in compose
 
 
 def test_backup_restore_uses_configured_bench_and_site():

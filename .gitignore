@@ -1,6 +1,7 @@
 # Environment Variables
 .env
 .apps-json/
+.config/apps.json
 
 # mounted volume
 sites
@@ -22,7 +23,6 @@ development/*
 # VS Code devcontainer
 .devcontainer/*
 !.devcontainer/devcontainer.json
-!.devcontainer/docker-compose.yml
 !.devcontainer/start-development.sh
 !.devcontainer/setup-host-cli.sh
 *.code-workspace

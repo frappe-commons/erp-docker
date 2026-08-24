@@ -2,7 +2,7 @@
 title: Local Services
 ---
 
-Add following to frappe container from the `.devcontainer/docker-compose.yml`:
+Add following to frappe container from the `.config/docker-compose.yml`:
 
 ```yaml
 ...

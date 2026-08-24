@@ -35,11 +35,18 @@ From the repository root, create and start the environment with the same
 command on every supported host:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml up --detach --wait
+docker compose -f .config/docker-compose.yml up --detach --wait
 ```
 
 The first run pulls container images and clones the Frappe framework, so it can
-take several minutes. The command returns when the Frappe health check passes.
+take several minutes. The command returns when Bench setup finishes.
+
+Open a container terminal and start Bench manually:
+
+```shell
+cd /workspace/development/frappe-bench
+bench start
+```
 
 Open `http://localhost:8000` and sign in with:
 
@@ -67,7 +74,7 @@ The `frappe` service runs `.devcontainer/start-development.sh`, which:
 3. Configures MariaDB, Redis, and developer mode.
 4. Creates the `development.localhost` site when missing, or selects the
    existing site.
-5. Starts the Bench development processes.
+5. Keeps the container ready for a developer to run `bench start` manually.
 
 By default, the Bench contains only the Frappe framework on `version-16`.
 An optional apps JSON file can add ERPNext or other apps during the first run.
@@ -90,9 +97,9 @@ An optional apps JSON file can add ERPNext or other apps during the first run.
 
 ### Use a `.env` file
 
-Create an ignored `.devcontainer/.env` file before the first run to change the
+Create an ignored `.config/.env` file before the first run to change the
 defaults without using shell-specific environment syntax. Compose loads this
-file because it lives beside `.devcontainer/docker-compose.yml`:
+file because it lives beside `.config/docker-compose.yml`:
 
 ```dotenv
 COMPOSE_PROJECT_NAME=my-frappe-development
@@ -105,17 +112,8 @@ HTTP_PORT=8010
 SOCKETIO_PORT=9010
 ```
 
-When configuration is supplied as a named profile, keep that file and link it
-to the Compose filename. Relative symlink targets are resolved inside the
-`.devcontainer` directory, so run this from the repository root:
-
-```shell
-ln -s example-company.env .devcontainer/.env
-```
-
-For `.devcontainer/srv.env`, use
-`ln -s srv.env .devcontainer/.env`. Remove the old `.env` link before selecting
-a different profile. The link and its target are both ignored by Git.
+No symlink or profile-selection command is required. Put the provided files
+directly at `.config/.env` and `.config/apps.json`.
 
 | Variable               | When it is used                                     |
 | ---------------------- | --------------------------------------------------- |
@@ -124,9 +122,11 @@ a different profile. The link and its target are both ignored by Git.
 | `SITE_NAME`            | Selects an existing site or creates a new site      |
 | `FRAPPE_BRANCH`        | Applies only when a new Bench is created            |
 | `APPS_JSON`            | Optional app-list path used for a new Bench          |
+| `BACKUP_URL`           | Optional database backup restored once during setup  |
 | `ADMIN_PASSWORD`       | Applies only when a new site is created             |
 | `DB_PASSWORD`          | Initializes MariaDB and authenticates site creation |
 | `FRAPPE_API_TOKEN`     | Optional token used for authenticated backup downloads |
+| `SOURCE_SITE_URL`      | Optional source origin used to discover the latest backup |
 | `HTTP_PORT`            | Publishes the Frappe web server on the host         |
 | `SOCKETIO_PORT`        | Publishes the Socket.IO service on the host         |
 
@@ -137,7 +137,7 @@ changing the password does not update an existing MariaDB account.
 Preview the resolved configuration without starting or changing containers:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml config
+docker compose -f .config/docker-compose.yml config
 ```
 
 ## Everyday commands
@@ -147,7 +147,7 @@ Run these commands from the repository root.
 ### Start or resume the environment
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml up --detach --wait
+docker compose -f .config/docker-compose.yml up --detach --wait
 ```
 
 Compose recreates a service when its configuration changed and leaves healthy,
@@ -156,7 +156,7 @@ unchanged services running.
 ### Check service status
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml ps
+docker compose -f .config/docker-compose.yml ps
 ```
 
 ### Follow logs
@@ -164,13 +164,13 @@ docker compose -f .devcontainer/docker-compose.yml ps
 All services:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml logs --follow --tail=200
+docker compose -f .config/docker-compose.yml logs --follow --tail=200
 ```
 
 Only the Frappe bootstrap and development server:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml logs --follow --tail=200 frappe
+docker compose -f .config/docker-compose.yml logs --follow --tail=200 frappe
 ```
 
 Press `Ctrl+C` to stop following logs; the containers continue running.
@@ -178,7 +178,7 @@ Press `Ctrl+C` to stop following logs; the containers continue running.
 ### Open a development shell
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe frappe bash
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe frappe bash
 ```
 
 The repository is mounted at `/workspace`, and the development workspace is
@@ -192,15 +192,15 @@ Use Compose's `--workdir` option so Bench runs from the correct directory. For
 the default Bench and site:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost migrate
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost migrate
 ```
 
 Other useful examples:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost console
-docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost backup --with-files
-docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench list-sites
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost console
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench --site development.localhost backup --with-files
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench list-sites
 ```
 
 Replace the Bench path and site name when `BENCH_NAME` or `SITE_NAME` is
@@ -209,7 +209,7 @@ overridden.
 ### Stop without deleting data
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml stop
+docker compose -f .config/docker-compose.yml stop
 ```
 
 Run the quick-start command again to resume.
@@ -217,7 +217,7 @@ Run the quick-start command again to resume.
 ### Remove replaceable containers
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml down
+docker compose -f .config/docker-compose.yml down
 ```
 
 This removes the containers and Compose network but preserves the Bench files
@@ -240,8 +240,7 @@ both its files and its database.
 The default quick start creates a framework-only Frappe Bench and does not
 require an `apps.json` file.
 
-To include ERPNext in a brand-new environment, create the ignored local file
-`.apps-json/apps.json` at the repository root:
+To include ERPNext in a brand-new environment, update `.config/apps.json`:
 
 ```json
 [
@@ -252,16 +251,14 @@ To include ERPNext in a brand-new environment, create the ignored local file
 ]
 ```
 
-Then add its container path to `.devcontainer/.env` before the first start:
+Then add its container path to `.config/.env` before the first start:
 
 ```dotenv
-APPS_JSON=/workspace/.apps-json/apps.json
+APPS_JSON=/workspace/.config/apps.json
 ```
 
-The entire `.apps-json/` directory is ignored by Git so branch- and
-machine-specific app choices stay local. Edit the file to add, remove, or
-change apps and branches. You can also point `APPS_JSON` at another file
-reachable inside the container. The file must use the format accepted by
+The real manifest is ignored by Git. `.config/apps.example.json` is a neutral
+tracked sample containing `[]`. The real file must use the format accepted by
 `bench init --apps_path`.
 
 `APPS_JSON` applies only when the Bench is first created. Changing the variable
@@ -269,18 +266,21 @@ or file later does not alter an existing Bench automatically.
 
 ## Restore a development backup
 
-Use the most recent database-backup URL from the source site. The restore
-replaces the selected local site's database, runs migrations, and verifies the
-installed apps:
+Provide either the source-site origin or a specific database-backup URL. With
+an origin, the script discovers the newest downloadable database backup. The
+restore replaces the selected local site's database, runs migrations, and
+verifies the installed apps:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe /workspace/development/restore-backup.sh BACKUP_URL
+docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe /workspace/development/restore-backup.sh https://source.example.com
 ```
 
 Authenticated downloads use `FRAPPE_API_TOKEN` from the ignored
-`.devcontainer/.env` file. The script validates the downloaded archive before
-replacing the database and removes its temporary files afterward. Pass a site
-name as the second argument when restoring a site other than the default.
+`.config/.env` file. Set `BACKUP_URL` to restore that backup automatically
+during setup. The script records a digest to avoid restoring it again on every
+container restart, and resets the local Administrator password to
+`ADMIN_PASSWORD` afterward. It validates the archive before replacing the
+database and removes temporary files afterward.
 
 For an existing Bench, open a development shell and use Bench directly:
 
@@ -306,7 +306,7 @@ VS Code is optional and uses the same Compose project:
 
 The Compose file declares the project name `frappe_development`, so VS Code and
 host Compose commands use the same containers regardless of the checkout
-directory. Override `COMPOSE_PROJECT_NAME` in `.devcontainer/.env` when you
+directory. Override `COMPOSE_PROJECT_NAME` in `.config/.env` when you
 need multiple isolated development environments.
 
 VS Code attaches to the `frappe` service and opens `/workspace/development`.
@@ -326,8 +326,8 @@ See [Debugging](02-debugging.md) for debugger setup.
 After pulling repository changes, update images and reconcile the services:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml pull
-docker compose -f .devcontainer/docker-compose.yml up --detach --wait
+docker compose -f .config/docker-compose.yml pull
+docker compose -f .config/docker-compose.yml up --detach --wait
 ```
 
 The bootstrap preserves existing Bench and site state. It does not switch the
@@ -342,8 +342,8 @@ reviewing the relevant Frappe upgrade instructions and taking a backup.
 Inspect status and the Frappe logs:
 
 ```shell
-docker compose -f .devcontainer/docker-compose.yml ps
-docker compose -f .devcontainer/docker-compose.yml logs --tail=300 frappe
+docker compose -f .config/docker-compose.yml ps
+docker compose -f .config/docker-compose.yml logs --tail=300 frappe
 ```
 
 The first installation can be slow while apps and dependencies download. The
@@ -351,7 +351,7 @@ Frappe health check allows up to 30 minutes for initial setup.
 
 ### A host port is already allocated
 
-Set unused ports in `.devcontainer/.env`, then run the quick-start command
+Set unused ports in `.config/.env`, then run the quick-start command
 again:
 
 ```dotenv
@@ -392,7 +392,7 @@ To reset everything:
 1. Stop the environment.
 
    ```shell
-   docker compose -f .devcontainer/docker-compose.yml stop
+   docker compose -f .config/docker-compose.yml stop
    ```
 
 2. Move `development/<BENCH_NAME>` outside the repository as a recoverable
@@ -400,7 +400,7 @@ To reset everything:
 3. Remove the containers and all Compose-managed volumes.
 
    ```shell
-   docker compose -f .devcontainer/docker-compose.yml down --volumes
+   docker compose -f .config/docker-compose.yml down --volumes
    ```
 
 4. Run the quick-start command to create a new environment.
@@ -420,7 +420,7 @@ stack as a production deployment.
 GPU access and other private host files are not mounted by the portable
 baseline. SSH routing uses read-only host configuration and authentication is
 forwarded through the agent socket; raw SSH private keys remain on the host.
-Keep backup API tokens in the ignored `.devcontainer/.env` file, never in an
+Keep backup API tokens in the ignored `.config/.env` file, never in an
 app manifest or committed configuration.
 
 ## Further reading

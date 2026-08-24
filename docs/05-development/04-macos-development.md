@@ -55,23 +55,19 @@ Only `main` is required. Company-specific branches are not part of the setup.
 ## Company developer handoff
 
 A developer receives two files from the company administrator through a secure
-channel. After cloning, save them under the agreed company profile. For
-example:
+channel. Save them at the fixed paths used by the Dev Container:
 
 ```text
-.apps-json/example-company/apps.json
-.devcontainer/example-company.env
+.config/apps.json
+.config/.env
 ```
 
-The files are intentionally excluded from Git. The administrator should send
-the repository URL and these two files; the developer can then follow the
-validation, startup, restore, and everyday-command sections below. For another
-company, replace `example-company` with the agreed profile name.
+The files are intentionally excluded from Git. Tracked `.example` files show
+their neutral formats without company repositories or credentials.
 
 ## Provide the app manifest
 
-Store the user-provided manifest under the ignored `.apps-json/` directory.
-For example, a developer could receive `.apps-json/example-company/apps.json`:
+Store the provided manifest at `.config/apps.json`:
 
 ```json
 [
@@ -89,8 +85,7 @@ Bench.
 
 ## Provide the environment file
 
-Store the user-provided environment under the ignored `.devcontainer/`
-directory. For example, `.devcontainer/example-company.env` could contain:
+Store the provided environment at `.config/.env`:
 
 ```dotenv
 COMPOSE_PROJECT_NAME=example_company_development
@@ -102,12 +97,12 @@ DB_PASSWORD=change-this-local-password
 HTTP_PORT=8000
 SOCKETIO_PORT=9000
 FRAPPE_API_TOKEN=key:secret
+SOURCE_SITE_URL=https://source.example.com
+APPS_JSON=/workspace/.config/apps.json
 ```
 
 `FRAPPE_API_TOKEN` is needed only for authenticated backup downloads. Never put
-it in the app manifest, documentation, a command, or a commit. The
-orchestration script supplies `APPS_JSON` from the manifest path, so the
-environment file does not need to define it.
+it in the app manifest, documentation, a command, or a commit.
 
 ## Validate the inputs
 
@@ -115,8 +110,8 @@ Run from the repository root:
 
 ```shell
 development/dev-env.sh \
-  --apps-json .apps-json/example-company/apps.json \
-  --env-file .devcontainer/example-company.env \
+  --apps-json .config/apps.json \
+  --env-file .config/.env \
   validate
 ```
 
@@ -128,36 +123,25 @@ is valid. It does not print the resolved configuration or credentials.
 
 ```shell
 development/dev-env.sh \
-  --apps-json .apps-json/example-company/apps.json \
-  --env-file .devcontainer/example-company.env \
+  --apps-json .config/apps.json \
+  --env-file .config/.env \
   up
 ```
 
 The command initializes a new Bench and site when missing, then waits until
-Frappe is healthy. Open the configured HTTP port, normally
-`http://localhost:8000`.
-
-To attach VS Code Dev Containers to this same named profile, expose it through
-the filename Compose loads automatically. For the example profile, run from
-the repository root:
-
-```shell
-ln -s example-company.env .devcontainer/.env
-```
-
-Do this before **Dev Containers: Reopen in Container**. If `.env` already
-selects another profile, remove that link first.
+setup completes. VS Code users can instead choose **Dev Containers: Reopen in
+Container** directly. Start Bench manually from the container terminal.
 
 ## Restore the latest backup
 
-Obtain the newest database-backup download URL from the source site. Use the
-same two input files and pass that URL to the orchestrator:
+Pass the source-site origin to discover its newest downloadable database
+backup automatically, or pass a specific database-backup URL:
 
 ```shell
 development/dev-env.sh \
-  --apps-json .apps-json/example-company/apps.json \
-  --env-file .devcontainer/example-company.env \
-  restore-latest LATEST_BACKUP_URL
+  --apps-json .config/apps.json \
+  --env-file .config/.env \
+  restore-latest https://source.example.com
 ```
 
 The command starts the environment when necessary, authenticates using the
@@ -170,8 +154,8 @@ a file:
 
 ```shell
 DEV_BACKUP_URL=LATEST_BACKUP_URL development/dev-env.sh \
-  --apps-json .apps-json/example-company/apps.json \
-  --env-file .devcontainer/example-company.env \
+  --apps-json .config/apps.json \
+  --env-file .config/.env \
   restore-latest
 ```
 
@@ -181,23 +165,16 @@ Reuse the same inputs with another command:
 
 ```shell
 # Status
-development/dev-env.sh --apps-json .apps-json/example-company/apps.json --env-file .devcontainer/example-company.env status
+development/dev-env.sh --apps-json .config/apps.json --env-file .config/.env status
 
 # Follow Frappe logs
-development/dev-env.sh --apps-json .apps-json/example-company/apps.json --env-file .devcontainer/example-company.env logs
+development/dev-env.sh --apps-json .config/apps.json --env-file .config/.env logs
 
 # Stop without deleting Bench files or database volumes
-development/dev-env.sh --apps-json .apps-json/example-company/apps.json --env-file .devcontainer/example-company.env stop
+development/dev-env.sh --apps-json .config/apps.json --env-file .config/.env stop
 ```
 
-The same script works for another company by changing only the two paths:
-
-```shell
-development/dev-env.sh \
-  --apps-json .apps-json/another-company/apps.json \
-  --env-file .devcontainer/another-company.env \
-  up
-```
+Replace the two ignored files to switch environments; no symlink is involved.
 
 ## Mac troubleshooting
 

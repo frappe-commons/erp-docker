@@ -104,27 +104,16 @@ through a secure channel:
 - an `apps.json` manifest containing the company's Frappe applications
 - a `.env` file containing the local site configuration and backup credential
 
-Save the supplied files under a company profile after cloning. For example:
+Save them at the fixed paths expected by the Dev Container:
 
 ```text
-.apps-json/example-company/apps.json
-.devcontainer/example-company.env
+.config/apps.json
+.config/.env
 ```
 
-Both paths are ignored by Git. Do not rename, commit, paste into an issue, or
-send the `.env` file through an unsecured channel.
-
-The command-line workflow below accepts the named environment file explicitly.
-VS Code Dev Containers instead loads `.devcontainer/.env`. To use the same
-named profile when reopening the repository in a Dev Container, create a
-relative symlink from the repository root:
-
-```sh
-ln -s example-company.env .devcontainer/.env
-```
-
-For example, a profile stored as `.devcontainer/srv.env` uses
-`ln -s srv.env .devcontainer/.env`. Create only one `.env` link at a time.
+Both real files are ignored by Git. Do not commit, paste, or send the `.env`
+through an unsecured channel. Neutral `.example` files document the required
+names and formats without containing company apps or credentials.
 
 Install and start [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/),
 then run:
@@ -133,19 +122,12 @@ then run:
 git clone https://github.com/bhickta/erp-docker.git
 cd erp-docker
 
-# Copy the two supplied files to the paths shown above, then:
-development/dev-env.sh \
-  --apps-json .apps-json/example-company/apps.json \
-  --env-file .devcontainer/example-company.env \
-  validate
-
-development/dev-env.sh \
-  --apps-json .apps-json/example-company/apps.json \
-  --env-file .devcontainer/example-company.env \
-  up
+# Copy the two supplied files to the paths shown above, then open the
+# repository with "Dev Containers: Reopen in Container".
 ```
 
-Open `http://localhost:8000` after the environment becomes healthy. See the
+After setup completes, run `cd /workspace/development/$BENCH_NAME && bench start`
+in the container terminal. Open `http://localhost:8000`. See the
 [macOS company setup guide](docs/05-development/04-macos-development.md) for
 backup restoration, status, logs, stopping the environment, and Mac-specific
 troubleshooting.
@@ -156,12 +138,13 @@ After cloning the repository, macOS, Windows, and Linux users can create and
 start the complete development environment with the same command:
 
 ```sh
-docker compose -f .devcontainer/docker-compose.yml up --detach --wait
+docker compose -f .config/docker-compose.yml up --detach --wait
 ```
 
-Docker pulls the required images, creates MariaDB and Redis, initializes a
-Frappe Bench and `development.localhost` site when missing, and waits until
-Frappe is ready. Open `http://localhost:8000` and sign in as `Administrator`
+Docker pulls the required images, creates MariaDB and Redis, and initializes a
+Frappe Bench and `development.localhost` site when missing. It does not start
+Bench automatically. Enter the container, run `bench start` from the Bench
+directory, then open `http://localhost:8000` and sign in as `Administrator`
 with password `admin`.
 
 The default is a framework-only Frappe environment. To include ERPNext or

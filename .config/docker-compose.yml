@@ -40,6 +40,7 @@ services:
         condition: service_started
     environment:
       APPS_JSON: ${APPS_JSON:-}
+      BACKUP_URL: ${BACKUP_URL:-}
       CODEX_HOME: /opt/host-cli/state/codex
       HOST_CLI_PATH: /home/frappe/.host-cli/bin
       SHELL: /bin/bash
@@ -50,6 +51,7 @@ services:
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
       GIT_SSH_COMMAND: ssh -o IdentitiesOnly=no
       SITE_NAME: ${SITE_NAME:-development.localhost}
+      SOURCE_SITE_URL: ${SOURCE_SITE_URL:-}
       SSH_AUTH_SOCK: /run/host-services/ssh-auth.sock
     volumes:
       - ..:/workspace:cached
@@ -70,11 +72,7 @@ services:
       - "${HTTP_PORT:-8000}:8000"
       - "${SOCKETIO_PORT:-9000}:9000"
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'curl --fail --silent --header "Host: $${SITE_NAME}" http://127.0.0.1:8000/api/method/ping >/dev/null',
-        ]
+      test: ["CMD", "test", "-f", "/tmp/frappe-bench-setup-complete"]
       start_period: 30m
       interval: 10s
       timeout: 5s

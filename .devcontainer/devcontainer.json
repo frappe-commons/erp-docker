@@ -22,7 +22,7 @@
       }
     }
   },
-  "dockerComposeFile": "./docker-compose.yml",
+  "dockerComposeFile": "../.config/docker-compose.yml",
   "service": "frappe",
   "overrideCommand": false,
   "workspaceFolder": "/workspace/development",

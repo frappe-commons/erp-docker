@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMPOSE_FILE="$REPOSITORY_ROOT/.devcontainer/docker-compose.yml"
+COMPOSE_FILE="$REPOSITORY_ROOT/.config/docker-compose.yml"
 
 usage() {
   cat <<'EOF'
@@ -20,7 +20,7 @@ Required inputs:
 Commands:
   validate          Validate the inputs and Compose configuration
   up                Start the development environment and wait until healthy
-  restore-latest    Start and restore BACKUP_URL (or DEV_BACKUP_URL)
+  restore-latest    Start and restore from a source site or backup URL
   status            Show container status
   logs              Follow Frappe logs
   stop              Stop containers without deleting data
@@ -114,12 +114,7 @@ validate() {
 }
 
 restore_latest() {
-  local backup_url=${1:-${DEV_BACKUP_URL:-}}
-
-  if [ -z "$backup_url" ]; then
-    echo "Provide the latest database-backup URL or set DEV_BACKUP_URL." >&2
-    exit 64
-  fi
+  local backup_source=${1:-${DEV_BACKUP_URL:-}}
   if ! grep -Eq '^FRAPPE_API_TOKEN=[^:]+:[^:]+$' "$env_file"; then
     echo "The environment file must define FRAPPE_API_TOKEN=key:secret." >&2
     exit 78
@@ -134,7 +129,7 @@ restore_latest() {
     sh -c \
     'cd -- "$BENCH_NAME"; exec /workspace/development/restore-backup.sh "$1" "$SITE_NAME"' \
     sh \
-    "$backup_url"
+    "$backup_source"
 }
 
 case "$command" in
