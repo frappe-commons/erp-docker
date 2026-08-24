@@ -57,8 +57,7 @@ def get_args_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-j",
         "--apps-json",
-        help="Path to apps.json (default: apps.json)",
-        default="apps.json",
+        help="Optional path to an apps.json file",
     )
     parser.add_argument(
         "-b",
@@ -69,8 +68,8 @@ def get_args_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-s",
         "--site-name",
-        help="Site name (default: srv)",
-        default="srv",
+        help="Site name (default: development.localhost)",
+        default="development.localhost",
     )
     parser.add_argument(
         "-r",
@@ -115,13 +114,11 @@ def get_args_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--db-name",
-        help="MariaDB database name (default: srv)",
-        default="srv",
+        help="Optional MariaDB database name",
     )
     parser.add_argument(
         "--db-password",
-        help="MariaDB site database password (default: 1212)",
-        default="1212",
+        help="Optional MariaDB site database password",
     )
     parser.add_argument(
         "--db-root-password",
@@ -165,8 +162,9 @@ def _bench_init_command(args: argparse.Namespace) -> str:
         "--skip-redis-config-generation",
         f"--frappe-path={args.frappe_repo}",
         f"--frappe-branch={args.frappe_branch}",
-        f"--apps_path={args.apps_json}",
     ]
+    if args.apps_json:
+        command.append(f"--apps_path={args.apps_json}")
     if args.verbose:
         command.append("--verbose")
     command.append(args.bench_name)
@@ -233,12 +231,12 @@ def _new_site_command(args: argparse.Namespace, apps):
         f"--admin-password={args.admin_password}",
     ]
     if args.db_type == "mariadb":
-        command[3:3] = [
-            "--force",
-            f"--db-name={args.db_name}",
-            f"--db-password={args.db_password}",
-            "--no-mariadb-socket",
-        ]
+        mariadb_options = ["--force", "--no-mariadb-socket"]
+        if args.db_name:
+            mariadb_options.append(f"--db-name={args.db_name}")
+        if args.db_password:
+            mariadb_options.append(f"--db-password={args.db_password}")
+        command[3:3] = mariadb_options
 
     command.extend(f"--install-app={app}" for app in apps)
     command.append(args.site_name)

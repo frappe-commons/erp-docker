@@ -3,7 +3,7 @@ set -euo pipefail
 
 WORKSPACE_FOLDER="${WORKSPACE_FOLDER:-/workspace/development}"
 BENCH_NAME="${BENCH_NAME:-frappe-bench}"
-SITE_NAME="${SITE_NAME:-srv}"
+SITE_NAME="${SITE_NAME:-development.localhost}"
 FRAPPE_BRANCH="${FRAPPE_BRANCH:-version-16}"
 DB_PASSWORD="${DB_PASSWORD:-123}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin}"
@@ -37,9 +37,6 @@ if [ "$(id -u)" -eq 0 ]; then
       chown -R frappe:"$(id -g frappe)" /home/frappe
     fi
   fi
-  mkdir -p /home/frappe/.cargo /home/frappe/.rustup
-  chown frappe:"$(id -g frappe)" /home/frappe/.cargo /home/frappe/.rustup
-
   exec setpriv \
     --reuid="$(id -u frappe)" \
     --regid="$(id -g frappe)" \
@@ -56,12 +53,19 @@ fi
 
 cd "$WORKSPACE_FOLDER"
 
-python installer.py \
-  --bench-name "$BENCH_NAME" \
-  --site-name "$SITE_NAME" \
-  --frappe-branch "$FRAPPE_BRANCH" \
-  --db-root-password "$DB_PASSWORD" \
+installer_args=(
+  --bench-name "$BENCH_NAME"
+  --site-name "$SITE_NAME"
+  --frappe-branch "$FRAPPE_BRANCH"
+  --db-root-password "$DB_PASSWORD"
   --admin-password "$ADMIN_PASSWORD"
+)
+
+if [ -n "${APPS_JSON:-}" ]; then
+  installer_args+=(--apps-json "$APPS_JSON")
+fi
+
+python installer.py "${installer_args[@]}"
 
 cd "$BENCH_NAME"
 exec bench start

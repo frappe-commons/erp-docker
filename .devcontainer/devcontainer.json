@@ -1,6 +1,6 @@
 {
   "name": "Frappe Bench",
-  "forwardPorts": [8000, 9000, 6787],
+  "forwardPorts": [8000, 9000],
   "remoteUser": "frappe",
   "customizations": {
     "vscode": {
@@ -26,9 +26,5 @@
   "service": "frappe",
   "overrideCommand": false,
   "workspaceFolder": "/workspace/development",
-  "shutdownAction": "stopCompose",
-  "postCreateCommand": "/workspace/.devcontainer/setup-tools.sh",
-  "remoteEnv": {
-    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
-  }
+  "shutdownAction": "stopCompose"
 }
