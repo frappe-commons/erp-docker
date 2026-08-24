@@ -326,7 +326,10 @@ def configure_app_git_remotes(args: argparse.Namespace) -> None:
                 ["git", "config", "--replace-all", "remote.origin.fetch", full_fetch],
                 cwd=app_dir,
             )
-            _run(["git", "fetch", "origin", "--prune"], cwd=app_dir)
+            fetch_command = ["git", "fetch", "origin", "--prune"]
+            if (app_dir / ".git" / "shallow").is_file():
+                fetch_command.insert(2, "--depth=1")
+            _run(fetch_command, cwd=app_dir)
 
 
 def _installed_apps(bench_dir: Path, apps_json: str | None = None):
