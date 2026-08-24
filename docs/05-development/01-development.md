@@ -414,6 +414,7 @@ app manifest or committed configuration.
 - [Choosing a deployment or development method](../01-getting-started/01-choosing-a-deployment-method.md)
 - [Debugging](02-debugging.md)
 - [Connecting to local services](03-local-services-connection.md)
+- [macOS company development setup](04-macos-development.md)
 - Installer options from inside the `frappe` container:
 
   ```shell

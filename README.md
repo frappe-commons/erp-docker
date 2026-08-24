@@ -70,6 +70,7 @@ The full `frappe_docker` documentation is available in [`docs/`](docs/) and publ
 - **Running in production:** [Production docs](docs/03-production/)
 - **Operating a deployment:** [Operations docs](docs/04-operations/)
 - **Development workflows:** [Development](docs/05-development/01-development.md)
+- **Mac/company developers:** [macOS company setup](docs/05-development/04-macos-development.md)
 - **FAQ:** [Frequently Asked Questions](https://github.com/frappe/frappe_docker/wiki/Frequently-Asked-Questions)
 
 ## Prerequisites
