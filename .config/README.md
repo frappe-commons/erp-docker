@@ -11,6 +11,8 @@ Both files are ignored by Git. Place the provided files at those exact paths,
 open the repository in a Dev Container, and wait for Bench setup to finish.
 The Rebuild and Reopen progress view streams the detailed setup log.
 The Bench directory is always `frappe-bench` and its site is always `localhost`.
+Each app keeps Bench's `upstream` remote and also gets an `origin` remote that
+fetches all branches, so standard `git switch <branch>` workflows work.
 Bench does not start automatically; run it from the container terminal:
 
 ```sh

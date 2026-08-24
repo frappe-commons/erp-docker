@@ -52,6 +52,7 @@ def main() -> int:
     args = get_args_parser().parse_args()
     try:
         init_bench_if_not_exist(args)
+        configure_app_git_remotes(args)
         create_site_in_bench(args)
     except subprocess.CalledProcessError as error:
         command = _format_command(error.cmd)
@@ -271,6 +272,61 @@ def _manifest_app_name(app: dict) -> str:
 
     repository = app.get("url", "").rstrip("/").rsplit("/", 1)[-1]
     return repository.removesuffix(".git").replace("-", "_")
+
+
+def _capture(command, *, cwd: Path, check: bool = True) -> str:
+    result = subprocess.run(
+        command,
+        cwd=cwd,
+        check=check,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def configure_app_git_remotes(args: argparse.Namespace) -> None:
+    """Expose every app's branches through a conventional origin remote."""
+    bench_dir = Path.cwd() / BENCH_NAME
+    apps_dir = bench_dir / "apps"
+    manifest_urls = {}
+    if args.apps_json:
+        manifest = json.loads(Path(args.apps_json).read_text(encoding="utf-8"))
+        manifest_urls = {_manifest_app_name(app): app.get("url") for app in manifest}
+
+    full_fetch = "+refs/heads/*:refs/remotes/origin/*"
+    for app_dir in sorted(apps_dir.iterdir()):
+        if not (app_dir / ".git").is_dir():
+            continue
+
+        remotes = set(_capture(["git", "remote"], cwd=app_dir).splitlines())
+        origin_added = False
+        if "origin" not in remotes:
+            remote_url = None
+            if "upstream" in remotes:
+                remote_url = _capture(
+                    ["git", "remote", "get-url", "upstream"], cwd=app_dir
+                )
+            if not remote_url:
+                remote_url = manifest_urls.get(app_dir.name)
+            if not remote_url:
+                cprint(f"No Git source found for {app_dir.name}; skipping origin", level=3)
+                continue
+            _run(["git", "remote", "add", "origin", remote_url], cwd=app_dir)
+            origin_added = True
+
+        fetch_rules = _capture(
+            ["git", "config", "--get-all", "remote.origin.fetch"],
+            cwd=app_dir,
+            check=False,
+        ).splitlines()
+        if origin_added or fetch_rules != [full_fetch]:
+            cprint(f"Fetching all Git branches for {app_dir.name}", level=3)
+            _run(
+                ["git", "config", "--replace-all", "remote.origin.fetch", full_fetch],
+                cwd=app_dir,
+            )
+            _run(["git", "fetch", "origin", "--prune"], cwd=app_dir)
 
 
 def _installed_apps(bench_dir: Path, apps_json: str | None = None):

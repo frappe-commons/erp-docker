@@ -138,6 +138,61 @@ def test_bench_init_accepts_optional_apps_json(tmp_path, monkeypatch):
     assert "--apps_path=custom apps.json" in init_command
 
 
+def test_app_git_remotes_expose_all_origin_branches(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    source.mkdir()
+    subprocess.run(["git", "init", "--initial-branch=main"], cwd=source, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=source, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=source, check=True)
+    (source / "README.md").write_text("main\n")
+    subprocess.run(["git", "add", "README.md"], cwd=source, check=True)
+    subprocess.run(["git", "commit", "-m", "main"], cwd=source, check=True)
+    subprocess.run(["git", "branch", "feature"], cwd=source, check=True)
+
+    bench_dir = tmp_path / "frappe-bench"
+    apps_dir = bench_dir / "apps"
+    apps_dir.mkdir(parents=True)
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            "--single-branch",
+            "--branch=main",
+            "--origin=upstream",
+            str(source),
+            str(apps_dir / "demo"),
+        ],
+        check=True,
+    )
+    monkeypatch.chdir(tmp_path)
+
+    installer.configure_app_git_remotes(parse_args())
+
+    app_dir = apps_dir / "demo"
+    assert set(
+        subprocess.run(
+            ["git", "remote"], cwd=app_dir, check=True, capture_output=True, text=True
+        ).stdout.splitlines()
+    ) == {"origin", "upstream"}
+    assert subprocess.run(
+        ["git", "config", "--get-all", "remote.origin.fetch"],
+        cwd=app_dir,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip() == "+refs/heads/*:refs/remotes/origin/*"
+    remote_branches = subprocess.run(
+        ["git", "branch", "--remotes"],
+        cwd=app_dir,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "origin/feature" in remote_branches
+
+
 def test_create_mariadb_site_with_sorted_apps(tmp_path, monkeypatch):
     bench_dir = make_bench(tmp_path, "frappe", "payments", "erpnext")
     (bench_dir / "apps" / "README.txt").write_text("not an app")
