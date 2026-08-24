@@ -44,7 +44,7 @@ Only `main` is required. Company-specific branches are not part of the setup.
 ## Provide the app manifest
 
 Store the user-provided manifest under the ignored `.apps-json/` directory.
-For example, a RAPL developer could receive `.apps-json/rapl/apps.json`:
+For example, a developer could receive `.apps-json/example-company/apps.json`:
 
 ```json
 [
@@ -63,12 +63,12 @@ Bench.
 ## Provide the environment file
 
 Store the user-provided environment under the ignored `.devcontainer/`
-directory. For example, `.devcontainer/rapl.env` could contain:
+directory. For example, `.devcontainer/example-company.env` could contain:
 
 ```dotenv
-COMPOSE_PROJECT_NAME=rapl_development
+COMPOSE_PROJECT_NAME=example_company_development
 BENCH_NAME=frappe-bench
-SITE_NAME=rapl.localhost
+SITE_NAME=example-company.localhost
 FRAPPE_BRANCH=version-16
 ADMIN_PASSWORD=admin
 DB_PASSWORD=change-this-local-password
@@ -88,8 +88,8 @@ Run from the repository root:
 
 ```shell
 development/dev-env.sh \
-  --apps-json .apps-json/rapl/apps.json \
-  --env-file .devcontainer/rapl.env \
+  --apps-json .apps-json/example-company/apps.json \
+  --env-file .devcontainer/example-company.env \
   validate
 ```
 
@@ -101,8 +101,8 @@ is valid. It does not print the resolved configuration or credentials.
 
 ```shell
 development/dev-env.sh \
-  --apps-json .apps-json/rapl/apps.json \
-  --env-file .devcontainer/rapl.env \
+  --apps-json .apps-json/example-company/apps.json \
+  --env-file .devcontainer/example-company.env \
   up
 ```
 
@@ -117,8 +117,8 @@ same two input files and pass that URL to the orchestrator:
 
 ```shell
 development/dev-env.sh \
-  --apps-json .apps-json/rapl/apps.json \
-  --env-file .devcontainer/rapl.env \
+  --apps-json .apps-json/example-company/apps.json \
+  --env-file .devcontainer/example-company.env \
   restore-latest LATEST_BACKUP_URL
 ```
 
@@ -132,8 +132,8 @@ a file:
 
 ```shell
 DEV_BACKUP_URL=LATEST_BACKUP_URL development/dev-env.sh \
-  --apps-json .apps-json/rapl/apps.json \
-  --env-file .devcontainer/rapl.env \
+  --apps-json .apps-json/example-company/apps.json \
+  --env-file .devcontainer/example-company.env \
   restore-latest
 ```
 
@@ -143,13 +143,13 @@ Reuse the same inputs with another command:
 
 ```shell
 # Status
-development/dev-env.sh --apps-json .apps-json/rapl/apps.json --env-file .devcontainer/rapl.env status
+development/dev-env.sh --apps-json .apps-json/example-company/apps.json --env-file .devcontainer/example-company.env status
 
 # Follow Frappe logs
-development/dev-env.sh --apps-json .apps-json/rapl/apps.json --env-file .devcontainer/rapl.env logs
+development/dev-env.sh --apps-json .apps-json/example-company/apps.json --env-file .devcontainer/example-company.env logs
 
 # Stop without deleting Bench files or database volumes
-development/dev-env.sh --apps-json .apps-json/rapl/apps.json --env-file .devcontainer/rapl.env stop
+development/dev-env.sh --apps-json .apps-json/example-company/apps.json --env-file .devcontainer/example-company.env stop
 ```
 
 The same script works for another company by changing only the two paths:
