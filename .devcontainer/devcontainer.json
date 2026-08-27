@@ -22,7 +22,10 @@
       }
     }
   },
-  "dockerComposeFile": "../.config/docker-compose.yml",
+  "dockerComposeFile": [
+    "../.config/docker-compose.yml",
+    "../.config/docker-compose.agent-tools.yml"
+  ],
   "service": "frappe",
   "overrideCommand": false,
   "postCreateCommand": "bash /workspace/.devcontainer/watch-setup.sh",

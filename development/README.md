@@ -33,7 +33,16 @@ host's NVM, Cargo, and `~/.local/bin` directories. Their launchers are rebuilt
 whenever the container starts.
 
 Codex, Headroom, and TokenSave integration is optional and disabled by default.
-Enable it by adding the agent-tools override:
+Enable it for one machine by adding these values to the ignored `.config/.env`:
+
+```dotenv
+ENABLE_HOST_AGENT_TOOLS=1
+HOST_AGENT_UV_SOURCE=/absolute/path/to/home/.local/share/uv
+HOST_AGENT_UV_TARGET=/absolute/path/to/home/.local/share/uv
+CODEX_CONTAINER_SANDBOX=danger-full-access
+```
+
+Then include the agent-tools override when using Compose directly:
 
 ```shell
 docker compose \

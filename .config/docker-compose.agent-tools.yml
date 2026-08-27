@@ -1,12 +1,12 @@
 services:
   frappe:
     environment:
-      # Opt in to container-safe Codex, Headroom, and TokenSave integration.
-      ENABLE_HOST_AGENT_TOOLS: "1"
+      # Off by default. Enable in the ignored .config/.env for one machine.
+      ENABLE_HOST_AGENT_TOOLS: "${ENABLE_HOST_AGENT_TOOLS:-0}"
       # Docker is the isolation boundary because nested Bubblewrap user
       # namespaces are blocked by the host's Docker/AppArmor configuration.
-      CODEX_CONTAINER_SANDBOX: ${CODEX_CONTAINER_SANDBOX:-danger-full-access}
+      CODEX_CONTAINER_SANDBOX: "${CODEX_CONTAINER_SANDBOX:-danger-full-access}"
     volumes:
       # Preserve absolute shebangs/symlinks for uv-installed host tools such as
       # Headroom; setup-host-cli.sh wraps their host Python with the host loader.
-      - ${HOME}/.local/share/uv:${HOME}/.local/share/uv:ro
+      - "${HOST_AGENT_UV_SOURCE:-../.devcontainer/agent-tools-disabled}:${HOST_AGENT_UV_TARGET:-/opt/host-cli/disabled-agent-tools}:ro"
