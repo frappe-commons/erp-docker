@@ -15,6 +15,7 @@ nvm_bins=("$host_cli_root"/nvm/versions/node/*/bin)
 source_dirs=()
 codex_host_executable=
 headroom_host_executable=
+lms_host_executable=
 host_agent_tools_enabled=false
 case ${ENABLE_HOST_AGENT_TOOLS:-0} in
   1 | true | yes | on) host_agent_tools_enabled=true ;;
@@ -25,21 +26,34 @@ if [ "${#nvm_bins[@]}" -gt 0 ]; then
   mapfile -t nvm_bins < <(printf '%s\n' "${nvm_bins[@]}" | sort -Vr)
   source_dirs+=("${nvm_bins[0]}")
 fi
-source_dirs+=("$host_cli_root/cargo/bin" "$host_cli_root/local/bin")
+source_dirs+=("$host_cli_root/cargo/bin" "$host_cli_root/local/bin" "$host_cli_root/lmstudio")
 
 for source_dir in "${source_dirs[@]}"; do
   [ -d "$source_dir" ] || continue
   for executable in "$source_dir"/*; do
     [ -x "$executable" ] || continue
     name=${executable##*/}
-    if [ "$host_agent_tools_enabled" = true ] && [ "$name" = codex ]; then
-      [ -n "$codex_host_executable" ] || codex_host_executable=$executable
-      continue
-    fi
-    if [ "$host_agent_tools_enabled" = true ] && [ "$name" = headroom ]; then
-      [ -n "$headroom_host_executable" ] || headroom_host_executable=$executable
-      continue
-    fi
+		if [ "$name" = codex ]; then
+			if [ "$host_agent_tools_enabled" = true ]; then
+				[ -n "$codex_host_executable" ] || codex_host_executable=$executable
+			fi
+			continue
+		fi
+		if [ "$name" = headroom ]; then
+			if [ "$host_agent_tools_enabled" = true ]; then
+				[ -n "$headroom_host_executable" ] || headroom_host_executable=$executable
+			fi
+			continue
+		fi
+		if [ "$name" = lms ]; then
+			if [ "$host_agent_tools_enabled" = true ]; then
+				[ -n "$lms_host_executable" ] || lms_host_executable=$executable
+			fi
+			continue
+		fi
+		if [ "$host_agent_tools_enabled" = false ] && [ "$name" = tokensave ]; then
+			continue
+		fi
     [ -e "$host_cli_bin/$name" ] && continue
 
     if [ -x "$host_loader" ] && file -Lb "$executable" | grep -q '^ELF '; then
@@ -71,6 +85,27 @@ if [ -n "$headroom_host_executable" ]; then
     chmod 0755 "$headroom_wrapper"
     mv -f "$headroom_wrapper" "$host_cli_bin/headroom"
   fi
+fi
+
+# LM Studio's control and OpenAI-compatible servers listen on host loopback.
+# Wrap the mounted CLI with container-local forwards and isolated client state.
+if [ -n "$lms_host_executable" ]; then
+	lms_wrapper=$(mktemp "$host_cli_bin/.lms.XXXXXX")
+	{
+		printf '#!/usr/bin/env bash\nset -euo pipefail\n'
+		printf 'lms_host_command=('
+		# The bundled Bun executable relies on argv[0], so it must be invoked
+		# directly rather than through the mounted dynamic loader.
+		printf '%q ' "$lms_host_executable"
+		printf ')\n'
+		cat <<'LMS_WRAPPER'
+
+source /workspace/.devcontainer/ensure-lms-bridge.sh
+exec "${lms_host_command[@]}" "$@"
+LMS_WRAPPER
+	} >"$lms_wrapper"
+	chmod 0755 "$lms_wrapper"
+	mv -f "$lms_wrapper" "$host_cli_bin/lms"
 fi
 
 # The shared Codex config points its OpenAI provider and Headroom MCP server at

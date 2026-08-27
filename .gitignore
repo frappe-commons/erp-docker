@@ -25,6 +25,9 @@ development/*
 !.devcontainer/agent-tools-disabled
 !.devcontainer/devcontainer.json
 !.devcontainer/ensure-headroom.sh
+!.devcontainer/ensure-host-lms-bridge.sh
+!.devcontainer/ensure-lms-bridge.sh
+!.devcontainer/lms-bridge.py
 !.devcontainer/start-development.sh
 !.devcontainer/setup-host-cli.sh
 !.devcontainer/watch-setup.sh

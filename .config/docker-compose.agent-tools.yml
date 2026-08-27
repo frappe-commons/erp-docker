@@ -6,7 +6,15 @@ services:
       # Docker is the isolation boundary because nested Bubblewrap user
       # namespaces are blocked by the host's Docker/AppArmor configuration.
       CODEX_CONTAINER_SANDBOX: "${CODEX_CONTAINER_SANDBOX:-danger-full-access}"
+      LMS_HOST_BRIDGE_PORT: "${HOST_LMS_BRIDGE_PORT:-41235}"
+      LMS_HOST_API_BRIDGE_PORT: "${HOST_LMS_API_BRIDGE_PORT:-41234}"
+      LMS_API_PORT: "${HOST_LMS_API_PORT:-1234}"
     volumes:
       # Preserve absolute shebangs/symlinks for uv-installed host tools such as
       # Headroom; setup-host-cli.sh wraps their host Python with the host loader.
       - "${HOST_AGENT_UV_SOURCE:-../.devcontainer/agent-tools-disabled}:${HOST_AGENT_UV_TARGET:-/opt/host-cli/disabled-agent-tools}:ro"
+      # LM Studio is also machine-local and opt-in. Mount only the CLI and the
+      # two small control files required for authenticated host communication.
+      - "${HOST_LMS_CLI_SOURCE:-../.devcontainer/agent-tools-disabled}:/opt/host-cli/lmstudio/lms:ro"
+      - "${HOST_LMS_KEY_SOURCE:-../.devcontainer/agent-tools-disabled}:/opt/host-cli/lmstudio/lms-key-2:ro"
+      - "${HOST_LMS_SERVER_CONFIG_SOURCE:-../.devcontainer/agent-tools-disabled}:/opt/host-cli/lmstudio/http-server-config.json:ro"

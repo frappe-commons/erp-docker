@@ -1,6 +1,7 @@
 {
-  "name": "Frappe Bench",
-  "forwardPorts": [8000, 9000],
+	"name": "Frappe Bench",
+	"initializeCommand": "bash .devcontainer/ensure-host-lms-bridge.sh",
+	"forwardPorts": [8000, 9000],
   "remoteUser": "frappe",
   "customizations": {
     "vscode": {

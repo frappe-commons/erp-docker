@@ -39,6 +39,9 @@ Enable it for one machine by adding these values to the ignored `.config/.env`:
 ENABLE_HOST_AGENT_TOOLS=1
 HOST_AGENT_UV_SOURCE=/absolute/path/to/home/.local/share/uv
 HOST_AGENT_UV_TARGET=/absolute/path/to/home/.local/share/uv
+HOST_LMS_CLI_SOURCE=/absolute/path/to/home/.lmstudio/bin/lms
+HOST_LMS_KEY_SOURCE=/absolute/path/to/home/.lmstudio/.internal/lms-key-2
+HOST_LMS_SERVER_CONFIG_SOURCE=/absolute/path/to/home/.lmstudio/.internal/http-server-config.json
 CODEX_CONTAINER_SANDBOX=danger-full-access
 ```
 
@@ -56,6 +59,12 @@ translating host-only MCP paths. It starts a container-local Headroom proxy
 using the host-installed version and enables TokenSave only when the current
 Git repository already contains a readable `.tokensave/tokensave.db`.
 TokenSave is never initialized implicitly.
+
+When the three `HOST_LMS_*_SOURCE` paths are set, the same opt-in also exposes
+the host `lms` CLI in the container. A host-side bridge is started when the Dev
+Container opens and accepts traffic only from this Compose project's `frappe`
+container; LM Studio remains bound to host loopback and is not exposed to the
+LAN. Start LM Studio's service before opening or rebuilding the container.
 
 Docker is the Codex isolation boundary in this environment, so the wrapper
 defaults to `--sandbox danger-full-access` while retaining the configured
