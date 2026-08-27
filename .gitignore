@@ -23,6 +23,7 @@ development/*
 # VS Code devcontainer
 .devcontainer/*
 !.devcontainer/devcontainer.json
+!.devcontainer/ensure-headroom.sh
 !.devcontainer/start-development.sh
 !.devcontainer/setup-host-cli.sh
 !.devcontainer/watch-setup.sh
