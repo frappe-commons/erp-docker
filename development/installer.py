@@ -120,8 +120,8 @@ def get_args_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-a",
         "--admin-password",
-        help="Administrator password for the site (default: admin)",
-        default="admin",
+        help="Administrator password enforced for the site (default: 1212)",
+        default="1212",
     )
     parser.add_argument(
         "-d",
@@ -709,6 +709,20 @@ def create_site_in_bench(args: argparse.Namespace) -> None:
         )
         cprint(f"Creating Site {site_name} ...", level=2)
         _run(command, cwd=bench_dir)
+
+    for spec in site_specs:
+        site_name = spec["name"]
+        cprint(f"Enforcing Administrator password for {site_name}", level=3)
+        _run(
+            [
+                "bench",
+                "--site",
+                site_name,
+                "set-admin-password",
+                spec["admin_password"],
+            ],
+            cwd=bench_dir,
+        )
 
     if args.sites_json:
         default_site = next(spec["name"] for spec in site_specs if spec["set_default"])

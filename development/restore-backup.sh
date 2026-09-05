@@ -112,4 +112,5 @@ fi
 cd "$bench_dir"
 bench --site "$site" restore "$restore_input" --force --mariadb-root-password "$db_root_password"
 bench --site "$site" migrate
+bench --site "$site" set-admin-password "${ADMIN_PASSWORD:-1212}"
 bench --site "$site" list-apps

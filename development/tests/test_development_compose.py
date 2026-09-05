@@ -11,6 +11,7 @@ DEVCONTAINER_FILE = REPOSITORY_ROOT / ".devcontainer" / "devcontainer.json"
 DEV_ENV_FILE = REPOSITORY_ROOT / "development" / "dev-env.sh"
 START_DEVELOPMENT_FILE = REPOSITORY_ROOT / ".devcontainer" / "start-development.sh"
 SETUP_HOST_CLI_FILE = REPOSITORY_ROOT / ".devcontainer" / "setup-host-cli.sh"
+RESTORE_BACKUP_FILE = REPOSITORY_ROOT / "development" / "restore-backup.sh"
 
 
 def render_compose_config(tmp_path, env=None):
@@ -58,6 +59,7 @@ def test_devcontainer_defaults_are_project_agnostic(tmp_path):
     assert "BENCH_NAME" not in config["services"]["frappe"]["environment"]
     assert config["services"]["frappe"]["environment"]["BACKUP_URL"] == ""
     assert config["services"]["frappe"]["environment"]["FRAPPE_API_TOKEN"] == ""
+    assert config["services"]["frappe"]["environment"]["ADMIN_PASSWORD"] == "1212"
     assert "SITE_NAME" not in config["services"]["frappe"]["environment"]
     assert config["services"]["frappe"]["environment"]["SOURCE_SITE_URL"] == ""
     assert config["services"]["frappe"]["environment"]["SSH_AUTH_SOCK"] == (
@@ -100,10 +102,12 @@ def test_devcontainer_waits_for_manual_bench_start():
 
 def test_backup_restore_uses_configured_bench_and_site():
     script = DEV_ENV_FILE.read_text(encoding="utf-8")
+    restore_script = RESTORE_BACKUP_FILE.read_text(encoding="utf-8")
 
     assert "cd -- frappe-bench" in script
     assert '"$1" "$2"' in script
     assert "site_name=localhost" in script
+    assert 'set-admin-password "${ADMIN_PASSWORD:-1212}"' in restore_script
 
 
 def test_host_cli_bridge_does_not_override_bench_toolchain():

@@ -36,6 +36,7 @@ def test_parser_defaults_to_frappe_only():
     args = parse_args()
 
     assert args.frappe_branch == "version-16"
+    assert args.admin_password == "1212"
     assert args.apps_json is None
     assert args.sites_json is None
     assert args.db_name is None
@@ -357,7 +358,7 @@ def test_create_mariadb_site_with_sorted_apps(tmp_path, monkeypatch):
         "--db-type=mariadb",
         "--db-root-username=root",
         "--db-root-password=123",
-        "--admin-password=admin",
+        "--admin-password=1212",
         "--install-app=erpnext",
         "--install-app=payments",
         "localhost",
@@ -473,7 +474,7 @@ def test_existing_site_is_preserved(tmp_path, monkeypatch):
 
     installer.create_site_in_bench(parse_args())
 
-    assert len(calls) == 2
+    assert len(calls) == 3
     assert calls[0][0][0] == [
         "bench",
         "set-config",
@@ -482,6 +483,13 @@ def test_existing_site_is_preserved(tmp_path, monkeypatch):
         "mariadb",
     ]
     assert calls[1][0][0] == ["bench", "use", "localhost"]
+    assert calls[2][0][0] == [
+        "bench",
+        "--site",
+        "localhost",
+        "set-admin-password",
+        "1212",
+    ]
 
 
 def test_multi_site_creates_separate_sites_with_selected_apps(tmp_path, monkeypatch):
@@ -519,7 +527,21 @@ def test_multi_site_creates_separate_sites_with_selected_apps(tmp_path, monkeypa
         "--install-app=erpnext",
         "--install-app=client_two",
     ]
-    assert calls[3][0][0] == ["bench", "use", "client-one.localhost"]
+    assert calls[3][0][0] == [
+        "bench",
+        "--site",
+        "client-one.localhost",
+        "set-admin-password",
+        "1212",
+    ]
+    assert calls[4][0][0] == [
+        "bench",
+        "--site",
+        "client-two.localhost",
+        "set-admin-password",
+        "1212",
+    ]
+    assert calls[5][0][0] == ["bench", "use", "client-one.localhost"]
     assert all(call[1]["cwd"] == bench_dir for call in calls)
 
 
@@ -577,7 +599,54 @@ def test_multi_site_existing_site_only_installs_missing_requested_apps(
         "install-app",
         "client_app",
     ]
-    assert calls[2][0][0] == ["bench", "use", "client.localhost"]
+    assert calls[2][0][0] == [
+        "bench",
+        "--site",
+        "client.localhost",
+        "set-admin-password",
+        "1212",
+    ]
+    assert calls[3][0][0] == ["bench", "use", "client.localhost"]
+
+
+def test_multi_site_enforces_each_configured_admin_password(tmp_path, monkeypatch):
+    make_bench(tmp_path, "frappe")
+    for site in ("one.localhost", "two.localhost"):
+        site_dir = tmp_path / "frappe-bench" / "sites" / site
+        site_dir.mkdir()
+        (site_dir / "site_config.json").write_text("{}")
+    manifest = tmp_path / "sites.json"
+    manifest.write_text(
+        '[{"name":"one.localhost","apps":[],"admin_password":"first",'
+        '"set_default":true},{"name":"two.localhost","apps":[],'
+        '"admin_password":"second","set_default":false}]'
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(installer, "_site_installed_apps", lambda *_: {"frappe"})
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.create_site_in_bench(parse_args("--sites-json", str(manifest)))
+
+    commands = [call[0][0] for call in calls]
+    assert [
+        "bench",
+        "--site",
+        "one.localhost",
+        "set-admin-password",
+        "first",
+    ] in commands
+    assert [
+        "bench",
+        "--site",
+        "two.localhost",
+        "set-admin-password",
+        "second",
+    ] in commands
 
 
 def test_installed_apps_accepts_frappe_v15_site_mapping(tmp_path, monkeypatch):

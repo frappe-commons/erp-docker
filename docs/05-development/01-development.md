@@ -120,7 +120,7 @@ directly at `.config/.env` and `.config/apps.json`.
 | `APPS_JSON`            | Optional app-list path used for a new Bench          |
 | `SITES_JSON`           | Optional manifest for multiple database-isolated sites |
 | `BACKUP_URL`           | Optional database backup restored once during setup  |
-| `ADMIN_PASSWORD`       | Applies only when a new site is created             |
+| `ADMIN_PASSWORD`       | Enforced after setup and every development restore  |
 | `DB_PASSWORD`          | Initializes MariaDB and authenticates site creation |
 | `FRAPPE_API_TOKEN`     | Optional token used for authenticated backup downloads |
 | `SOURCE_SITE_URL`      | Optional source origin used to discover the latest backup |

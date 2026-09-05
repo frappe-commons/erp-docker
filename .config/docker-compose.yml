@@ -45,7 +45,7 @@ services:
       CODEX_HOME: /opt/host-cli/state/codex
       HOST_CLI_PATH: /home/frappe/.host-cli/bin
       SHELL: /bin/bash
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-1212}
       DB_PASSWORD: ${DB_PASSWORD:-123}
       FRAPPE_API_TOKEN: ${FRAPPE_API_TOKEN:-}
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
