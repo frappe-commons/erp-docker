@@ -11,11 +11,13 @@ Usage:
   development/dev-env.sh \
     --apps-json PATH \
     --env-file PATH \
+    [--site SITE] \
     COMMAND [BACKUP_URL]
 
 Required inputs:
   --apps-json PATH  User-provided Bench app manifest inside this repository
   --env-file PATH   User-provided Compose environment file
+  --site SITE       Restore target (default: localhost)
 
 Commands:
   validate          Validate the inputs and Compose configuration
@@ -32,6 +34,7 @@ EOF
 
 apps_json=""
 env_file=""
+site_name=localhost
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --apps-json)
@@ -42,6 +45,11 @@ while [ "$#" -gt 0 ]; do
     --env-file)
       [ "$#" -ge 2 ] || { echo "--env-file requires a path" >&2; exit 64; }
       env_file=$2
+      shift 2
+      ;;
+    --site)
+      [ "$#" -ge 2 ] || { echo "--site requires a name" >&2; exit 64; }
+      site_name=$2
       shift 2
       ;;
     help | --help | -h)
@@ -127,9 +135,10 @@ restore_latest() {
     --workdir /workspace/development \
     frappe \
     sh -c \
-    'cd -- frappe-bench; exec /workspace/development/restore-backup.sh "$1" localhost' \
+    'cd -- frappe-bench; exec /workspace/development/restore-backup.sh "$1" "$2"' \
     sh \
-    "$backup_source"
+    "$backup_source" \
+    "$site_name"
 }
 
 case "$command" in

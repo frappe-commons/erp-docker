@@ -1,0 +1,12 @@
+[
+  {
+    "name": "client-one.localhost",
+    "apps": ["erpnext", "client_one"],
+    "set_default": true
+  },
+  {
+    "name": "client-two.localhost",
+    "apps": ["erpnext", "client_two"],
+    "set_default": false
+  }
+]

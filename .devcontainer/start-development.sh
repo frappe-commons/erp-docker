@@ -79,6 +79,14 @@ installer_args=(
 if [ -n "${APPS_JSON:-}" ]; then
   installer_args+=(--apps-json "$APPS_JSON")
 fi
+if [ -n "${SITES_JSON:-}" ]; then
+  installer_args+=(--sites-json "$SITES_JSON")
+fi
+if [ -n "${SITES_JSON:-}" ] && [ -n "$backup_source" ]; then
+  echo "Ignoring the global backup source in multi-site mode." >&2
+  echo "Restore each site explicitly with restore-backup.sh." >&2
+  backup_source=""
+fi
 if [ -n "$backup_source" ]; then
   installer_args+=(--skip-app-install)
 fi

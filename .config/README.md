@@ -7,10 +7,15 @@ The Dev Container uses two local configuration files:
 .config/apps.json
 ```
 
+For a shared Bench with multiple client sites, it also uses the optional
+ignored file `.config/sites.json`.
+
 Both files are ignored by Git. Place the provided files at those exact paths,
 open the repository in a Dev Container, and wait for Bench setup to finish.
 The Rebuild and Reopen progress view streams the detailed setup log.
-The Bench directory is always `frappe-bench` and its site is always `localhost`.
+The Bench directory is always `frappe-bench`. Without `SITES_JSON`, its site is
+`localhost`. With `SITES_JSON`, every entry is a separate Frappe site with its
+own MariaDB database, files, configuration, and installed-app selection.
 Each app keeps Bench's `upstream` remote and also gets an `origin` remote that
 fetches all branches, so standard `git switch <branch>` workflows work.
 Before creating Bench, setup checks that every configured app repository and
@@ -24,11 +29,11 @@ cd /workspace/development/frappe-bench
 bench start
 ```
 
-Neutral samples are provided as `.config/.env.example` and
-`.config/apps.example.json`. The real files keep the same base names without
-`.example` and remain ignored.
+Neutral samples are provided as `.config/.env.example`,
+`.config/apps.example.json`, and `.config/sites.example.json`. The real files
+keep the same base names without `.example` and remain ignored.
 
-When `.config/.env` defines `SOURCE_SITE_URL` and
+For the legacy single-site mode, when `.config/.env` defines `SOURCE_SITE_URL` and
 `FRAPPE_API_TOKEN`, restore the newest downloadable database backup before
 starting Bench:
 
@@ -59,3 +64,14 @@ new restore. When a backup is configured, setup creates only the base site
 before restoring, so custom apps are initialized from the backup rather than
 against an empty database. After restoration, the local Administrator password
 is set to `ADMIN_PASSWORD`.
+
+Automatic startup restore is disabled with `SITES_JSON`, because one global
+backup URL cannot identify a client. Restore each site explicitly:
+
+```sh
+cd /workspace/development/frappe-bench
+/workspace/development/restore-backup.sh https://client.example.com client.localhost
+```
+
+When onboarding a backup-backed site, temporarily set `"restore": true` in its
+site entry. Remove that flag after restoring the database.

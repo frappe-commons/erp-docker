@@ -54,6 +54,7 @@ def test_devcontainer_defaults_are_project_agnostic(tmp_path):
 
     assert config["name"] == "frappe_development"
     assert config["services"]["frappe"]["environment"]["APPS_JSON"] == ""
+    assert config["services"]["frappe"]["environment"]["SITES_JSON"] == ""
     assert "BENCH_NAME" not in config["services"]["frappe"]["environment"]
     assert config["services"]["frappe"]["environment"]["BACKUP_URL"] == ""
     assert config["services"]["frappe"]["environment"]["FRAPPE_API_TOKEN"] == ""
@@ -90,10 +91,10 @@ def test_devcontainer_waits_for_manual_bench_start():
 
     assert "exec bench start" not in startup
     assert "exec sleep infinity" in startup
-    assert "touch \"$setup_marker\"" in startup
+    assert 'touch "$setup_marker"' in startup
     assert 'set-admin-password "$ADMIN_PASSWORD"' in startup
     assert ".development-backup-restore" in startup
-    assert 'installer_args+=(--skip-app-install)' in startup
+    assert "installer_args+=(--skip-app-install)" in startup
     assert "/tmp/frappe-bench-setup-complete" in compose
 
 
@@ -101,15 +102,22 @@ def test_backup_restore_uses_configured_bench_and_site():
     script = DEV_ENV_FILE.read_text(encoding="utf-8")
 
     assert "cd -- frappe-bench" in script
-    assert '"$1" localhost' in script
+    assert '"$1" "$2"' in script
+    assert "site_name=localhost" in script
 
 
 def test_host_cli_bridge_does_not_override_bench_toolchain():
     startup = START_DEVELOPMENT_FILE.read_text(encoding="utf-8")
     host_cli_setup = SETUP_HOST_CLI_FILE.read_text(encoding="utf-8")
 
-    assert 'export PATH="${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}:$PATH"' not in startup
-    assert 'shell_hook=\'export PATH="$PATH:${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}"\'' in host_cli_setup
+    assert (
+        'export PATH="${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}:$PATH"'
+        not in startup
+    )
+    assert (
+        "shell_hook='export PATH=\"$PATH:${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}\"'"
+        in host_cli_setup
+    )
 
 
 def test_devcontainer_env_is_loaded_from_compose_directory(tmp_path):
@@ -120,12 +128,14 @@ def test_devcontainer_env_is_loaded_from_compose_directory(tmp_path):
             "HTTP_PORT": "18080",
             "SOCKETIO_PORT": "19090",
             "APPS_JSON": "apps.json",
+            "SITES_JSON": "sites.json",
             "FRAPPE_API_TOKEN": "key:secret",
         },
     )
 
     assert config["name"] == "compose-env-test"
     assert config["services"]["frappe"]["environment"]["APPS_JSON"] == "apps.json"
+    assert config["services"]["frappe"]["environment"]["SITES_JSON"] == "sites.json"
     assert config["services"]["frappe"]["environment"]["FRAPPE_API_TOKEN"] == (
         "key:secret"
     )
