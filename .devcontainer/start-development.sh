@@ -13,7 +13,13 @@ export PYENV_ROOT
 export PATH="$PATH:/home/frappe/.local/bin:$PYENV_ROOT/bin:$PYENV_ROOT/shims"
 
 if [ "$(id -u)" -eq 0 ]; then
-  workspace_uid="$(stat -c '%u' "$WORKSPACE_FOLDER")"
+    if ! command -v jq >/dev/null || ! command -v xmllint >/dev/null || ! command -v xmlstarlet >/dev/null; then
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl jq libxml2-utils xmlstarlet
+        rm -rf /var/lib/apt/lists/*
+    fi
+
+    workspace_uid="$(stat -c '%u' "$WORKSPACE_FOLDER")"
   workspace_gid="$(stat -c '%g' "$WORKSPACE_FOLDER")"
 
   # On native Linux, match the host repository owner so generated files stay

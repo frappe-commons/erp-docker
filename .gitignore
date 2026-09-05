@@ -1,5 +1,7 @@
 # Environment Variables
 .env
+.env.local
+development/test-artifacts/
 .apps-json/
 .config/apps.json
 
@@ -12,6 +14,9 @@ development/*
 !development/dev-env.sh
 !development/restore-backup.sh
 !development/vscode-example/
+!development/scripts/
+!development/scripts/tally/
+!development/scripts/tally/*.sh
 
 # Pycharm
 .idea

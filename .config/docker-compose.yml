@@ -48,9 +48,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-123}
       FRAPPE_API_TOKEN: ${FRAPPE_API_TOKEN:-}
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
-      GIT_SSH_COMMAND: ssh -o IdentitiesOnly=no -o BatchMode=yes
+      GIT_SSH_COMMAND: ssh -o IdentitiesOnly=yes -o BatchMode=yes
       SOURCE_SITE_URL: ${SOURCE_SITE_URL:-}
       SSH_AUTH_SOCK: /run/host-services/ssh-auth.sock
+      TALLY_BASE_URL: ${TALLY_BASE_URL:-http://host.docker.internal:9000}
+      TALLY_REAL_TESTS: ${TALLY_REAL_TESTS:-0}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ..:/workspace:cached
       # Share host-installed user CLIs without exposing the entire host home.
@@ -59,10 +63,12 @@ services:
       - ${HOME}/.nvm:/opt/host-cli/nvm:ro
       - ${HOME}/.codex:/opt/host-cli/state/codex
       - ${HOME}/.tokensave:/opt/host-cli/state/tokensave
-      # Reuse host SSH routing and agent authentication without mounting keys.
+      # Reuse host SSH routing and agent authentication without mounting private keys.
       - ${SSH_AUTH_SOCK:-/dev/null}:/run/host-services/ssh-auth.sock
       - ${HOME}/.ssh/config:/home/frappe/.ssh/config:ro
       - ${HOME}/.ssh/known_hosts:/home/frappe/.ssh/known_hosts:ro
+      # The public half lets SSH select this identity from the forwarded agent.
+      - ${HOME}/.ssh/bhickta.pem.pub:/home/frappe/.ssh/bhickta.pem:ro
       # Host-built ELF CLIs may require a newer glibc than the image provides.
       - /lib/x86_64-linux-gnu:/opt/host-cli/lib:ro
     working_dir: /workspace/development
