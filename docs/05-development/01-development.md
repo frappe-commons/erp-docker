@@ -72,8 +72,8 @@ The `frappe` service runs `.devcontainer/start-development.sh`, which:
 1. Aligns file ownership with the repository owner on native Linux.
 2. Creates `development/frappe-bench` when no Bench exists.
 3. Configures MariaDB, Redis, and developer mode.
-4. Creates the `localhost` site when missing, or selects the
-   existing site.
+4. Creates `localhost` by default, or reconciles every site in the optional
+   multi-site manifest.
 5. Keeps the container ready for a developer to run `bench start` manually.
 
 By default, the Bench contains only the Frappe framework on `version-16`.
@@ -118,6 +118,7 @@ directly at `.config/.env` and `.config/apps.json`.
 | `COMPOSE_PROJECT_NAME` | Names and isolates the Compose project and volumes  |
 | `FRAPPE_BRANCH`        | Applies only when a new Bench is created            |
 | `APPS_JSON`            | Optional app-list path used for a new Bench          |
+| `SITES_JSON`           | Optional manifest for multiple database-isolated sites |
 | `BACKUP_URL`           | Optional database backup restored once during setup  |
 | `ADMIN_PASSWORD`       | Applies only when a new site is created             |
 | `DB_PASSWORD`          | Initializes MariaDB and authenticates site creation |
@@ -135,6 +136,54 @@ Preview the resolved configuration without starting or changing containers:
 ```shell
 docker compose -f .config/docker-compose.yml config
 ```
+
+### Run multiple client sites in one Bench
+
+Use one shared Bench when clients require compatible Frappe, ERPNext, Python,
+Node, and app branches. Every site still receives a distinct MariaDB database
+and database user; only application source and development processes are
+shared.
+
+First, `.config/apps.json` must contain the union of repositories required by
+all sites. Then copy `.config/sites.example.json` to the ignored
+`.config/sites.json` and select apps per site:
+
+```json
+[
+  {
+    "name": "client-one.localhost",
+    "apps": ["erpnext", "client_one"],
+    "set_default": true
+  },
+  {
+    "name": "client-two.localhost",
+    "apps": ["erpnext", "client_two"],
+    "set_default": false
+  }
+]
+```
+
+Enable the manifest in `.config/.env`:
+
+```dotenv
+APPS_JSON=/workspace/.config/apps.json
+SITES_JSON=/workspace/.config/sites.json
+```
+
+Site names must be unique and exactly one entry must set `set_default` to
+`true`. Preserve dependency order in each `apps` list. On later starts, the
+bootstrap fetches newly configured app repositories and installs missing
+requested apps on existing sites. It never automatically removes apps or
+sites.
+
+For a site that will immediately receive a database backup, temporarily add
+`"restore": true` to its entry. The bootstrap creates a base site without
+running custom app installation hooks. Restore the backup, remove the flag,
+and restart once so the normal app reconciliation verifies the restored site.
+
+Use separate Benches when versions or dependency branches are incompatible.
+Multiple Benches require distinct process ports and are outside this shared
+Bench configuration.
 
 ## Everyday commands
 
@@ -199,8 +248,10 @@ docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home
 docker compose -f .config/docker-compose.yml exec --user frappe --env HOME=/home/frappe --workdir /workspace/development/frappe-bench frappe bench list-sites
 ```
 
-The Bench path is always `development/frappe-bench` and the site is always
-`localhost`.
+The Bench path is always `development/frappe-bench`. For multi-site mode,
+replace `localhost` with the client site, for example
+`bench --site client-one.localhost migrate`. With `bench start` running, open
+`http://client-one.localhost:8000` or `http://client-two.localhost:8000`.
 
 ### Stop without deleting data
 
@@ -257,8 +308,10 @@ The real manifest is ignored by Git. `.config/apps.example.json` is a neutral
 tracked sample containing `[]`. The real file must use the format accepted by
 `bench init --apps_path`.
 
-`APPS_JSON` applies only when the Bench is first created. Changing the variable
-or file later does not alter an existing Bench automatically.
+On a new Bench, `APPS_JSON` supplies the initial app repositories. On an
+existing Bench, the bootstrap adds repositories newly listed in that manifest;
+it never removes repositories. In multi-site mode, `SITES_JSON` selects which
+of those apps are installed on each site.
 
 ## Restore a development backup
 
@@ -278,6 +331,19 @@ backup automatically, or set `BACKUP_URL` to select a specific backup.
 again on every container restart, and resets the local Administrator password
 to `ADMIN_PASSWORD` afterward. It validates the archive before replacing the
 database and removes temporary files afterward.
+
+`BACKUP_URL` and `SOURCE_SITE_URL` automatic startup restore are single-site
+features. With `SITES_JSON`, restore every client explicitly so the target is
+unambiguous:
+
+```shell
+cd /workspace/development/frappe-bench
+/workspace/development/restore-backup.sh https://one.example.com client-one.localhost
+/workspace/development/restore-backup.sh https://two.example.com client-two.localhost
+```
+
+The target can also be passed to the host helper with
+`development/dev-env.sh --site client-one.localhost ... restore-latest`.
 
 For an existing Bench, open a development shell and use Bench directly:
 

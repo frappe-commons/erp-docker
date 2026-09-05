@@ -37,6 +37,7 @@ def test_parser_defaults_to_frappe_only():
 
     assert args.frappe_branch == "version-16"
     assert args.apps_json is None
+    assert args.sites_json is None
     assert args.db_name is None
     assert args.db_password is None
 
@@ -51,11 +52,70 @@ def test_parser_rejects_a_custom_site_name():
         parse_args("--site-name", "other.localhost")
 
 
+def test_site_manifest_defines_multiple_isolated_sites(tmp_path):
+    manifest = tmp_path / "sites.json"
+    manifest.write_text("""[
+          {"name": "client-one.localhost", "apps": ["erpnext", "client_one"],
+           "set_default": true},
+          {"name": "client-two.localhost", "apps": ["erpnext", "client_two"],
+           "set_default": false}
+        ]""")
+
+    specs = installer.load_site_specs(parse_args("--sites-json", str(manifest)))
+
+    assert [spec["name"] for spec in specs] == [
+        "client-one.localhost",
+        "client-two.localhost",
+    ]
+    assert specs[0]["apps"] == ["erpnext", "client_one"]
+    assert specs[0]["set_default"] is True
+    assert specs[0]["restore"] is False
+    assert all(spec["reconcile_apps"] is True for spec in specs)
+
+
+@pytest.mark.parametrize(
+    "content, message",
+    [
+        ("[]", "at least one site"),
+        (
+            '[{"name":"same.localhost","apps":[],"set_default":true},'
+            '{"name":"same.localhost","apps":[],"set_default":false}]',
+            "duplicate site name",
+        ),
+        (
+            '[{"name":"one.localhost","apps":[],"set_default":true},'
+            '{"name":"two.localhost","apps":[],"set_default":true}]',
+            "exactly one default site",
+        ),
+    ],
+)
+def test_site_manifest_rejects_unsafe_layouts(tmp_path, content, message):
+    manifest = tmp_path / "sites.json"
+    manifest.write_text(content)
+
+    with pytest.raises(RuntimeError, match=message):
+        installer.load_site_specs(parse_args("--sites-json", str(manifest)))
+
+
+def test_multi_site_rejects_one_shared_explicit_database(tmp_path):
+    manifest = tmp_path / "sites.json"
+    manifest.write_text('[{"name":"one.localhost","apps":[],"set_default":true}]')
+
+    with pytest.raises(RuntimeError, match="separate database and user per site"):
+        installer.load_site_specs(
+            parse_args(
+                "--sites-json",
+                str(manifest),
+                "--db-name",
+                "shared_database",
+            )
+        )
+
+
 def test_app_source_preflight_checks_configured_branch(tmp_path, monkeypatch):
     manifest = tmp_path / "apps.json"
     manifest.write_text(
-        '[{"url": "git@github.com:example/private-app.git", '
-        '"branch": "version-15"}]'
+        '[{"url": "git@github.com:example/private-app.git", ' '"branch": "version-15"}]'
     )
     calls = []
     monkeypatch.setattr(
@@ -84,8 +144,7 @@ def test_app_source_preflight_checks_configured_branch(tmp_path, monkeypatch):
 def test_app_source_preflight_fails_before_setup(tmp_path, monkeypatch):
     manifest = tmp_path / "apps.json"
     manifest.write_text(
-        '[{"url": "git@github.com:example/private-app.git", '
-        '"branch": "missing"}]'
+        '[{"url": "git@github.com:example/private-app.git", ' '"branch": "missing"}]'
     )
     monkeypatch.setattr(
         installer.subprocess,
@@ -176,12 +235,38 @@ def test_bench_init_accepts_optional_apps_json(tmp_path, monkeypatch):
         lambda *args, **kwargs: calls.append((args, kwargs)),
     )
 
-    installer.init_bench_if_not_exist(
-        parse_args("--apps-json", "custom apps.json")
-    )
+    installer.init_bench_if_not_exist(parse_args("--apps-json", "custom apps.json"))
 
     init_command = shlex.split(calls[0][0][0][3])
     assert "--apps_path=custom apps.json" in init_command
+
+
+def test_existing_bench_adds_apps_newly_added_to_manifest(tmp_path, monkeypatch):
+    bench_dir = make_bench(tmp_path, "frappe", "erpnext")
+    manifest = tmp_path / "apps.json"
+    manifest.write_text("""[
+          {"url": "https://github.com/frappe/erpnext.git", "branch": "version-15"},
+          {"url": "git@github.com:example/client-app.git", "branch": "version-15"}
+        ]""")
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.sync_manifest_apps(parse_args("--apps-json", str(manifest)))
+
+    assert len(calls) == 1
+    assert calls[0][0][0] == [
+        "bench",
+        "get-app",
+        "--branch",
+        "version-15",
+        "git@github.com:example/client-app.git",
+    ]
+    assert calls[0][1]["cwd"] == bench_dir
 
 
 def test_app_git_remotes_expose_all_origin_branches(tmp_path, monkeypatch):
@@ -222,13 +307,16 @@ def test_app_git_remotes_expose_all_origin_branches(tmp_path, monkeypatch):
             ["git", "remote"], cwd=app_dir, check=True, capture_output=True, text=True
         ).stdout.splitlines()
     ) == {"origin", "upstream"}
-    assert subprocess.run(
-        ["git", "config", "--get-all", "remote.origin.fetch"],
-        cwd=app_dir,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip() == "+refs/heads/*:refs/remotes/origin/*"
+    assert (
+        subprocess.run(
+            ["git", "config", "--get-all", "remote.origin.fetch"],
+            cwd=app_dir,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        == "+refs/heads/*:refs/remotes/origin/*"
+    )
     remote_branches = subprocess.run(
         ["git", "branch", "--remotes"],
         cwd=app_dir,
@@ -282,13 +370,11 @@ def test_create_mariadb_site_with_sorted_apps(tmp_path, monkeypatch):
 def test_create_site_preserves_app_manifest_dependency_order(tmp_path, monkeypatch):
     make_bench(tmp_path, "frappe", "srv_erp", "erpnext", "demo_erpnext")
     manifest = tmp_path / "apps.json"
-    manifest.write_text(
-        """[
+    manifest.write_text("""[
           {"url": "https://github.com/frappe/erpnext.git"},
           {"url": "git@github.com:example/demo-erpnext.git"},
           {"url": "git@github.com:example/srv-erp.git"}
-        ]"""
-    )
+        ]""")
     monkeypatch.chdir(tmp_path)
     calls = []
     monkeypatch.setattr(
@@ -300,9 +386,7 @@ def test_create_site_preserves_app_manifest_dependency_order(tmp_path, monkeypat
     installer.create_site_in_bench(parse_args("--apps-json", str(manifest)))
 
     install_options = [
-        argument
-        for argument in calls[1][0][0]
-        if argument.startswith("--install-app=")
+        argument for argument in calls[1][0][0] if argument.startswith("--install-app=")
     ]
     assert install_options == [
         "--install-app=erpnext",
@@ -400,6 +484,115 @@ def test_existing_site_is_preserved(tmp_path, monkeypatch):
     assert calls[1][0][0] == ["bench", "use", "localhost"]
 
 
+def test_multi_site_creates_separate_sites_with_selected_apps(tmp_path, monkeypatch):
+    bench_dir = make_bench(tmp_path, "frappe", "erpnext", "client_one", "client_two")
+    manifest = tmp_path / "sites.json"
+    manifest.write_text("""[
+          {"name": "client-one.localhost", "apps": ["erpnext", "client_one"],
+           "set_default": true},
+          {"name": "client-two.localhost", "apps": ["erpnext", "client_two"],
+           "set_default": false}
+        ]""")
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.create_site_in_bench(parse_args("--sites-json", str(manifest)))
+
+    first_site = calls[1][0][0]
+    second_site = calls[2][0][0]
+    assert first_site[-1] == "client-one.localhost"
+    assert second_site[-1] == "client-two.localhost"
+    assert "--set-default" in first_site
+    assert "--set-default" not in second_site
+    assert not any(argument.startswith("--db-name=") for argument in first_site)
+    assert not any(argument.startswith("--db-name=") for argument in second_site)
+    assert [arg for arg in first_site if arg.startswith("--install-app=")] == [
+        "--install-app=erpnext",
+        "--install-app=client_one",
+    ]
+    assert [arg for arg in second_site if arg.startswith("--install-app=")] == [
+        "--install-app=erpnext",
+        "--install-app=client_two",
+    ]
+    assert calls[3][0][0] == ["bench", "use", "client-one.localhost"]
+    assert all(call[1]["cwd"] == bench_dir for call in calls)
+
+
+def test_restore_site_is_created_without_app_initialization(tmp_path, monkeypatch):
+    make_bench(tmp_path, "frappe", "erpnext", "client_app")
+    manifest = tmp_path / "sites.json"
+    manifest.write_text(
+        '[{"name":"client.localhost","apps":["erpnext","client_app"],'
+        '"restore":true,"set_default":true}]'
+    )
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.create_site_in_bench(parse_args("--sites-json", str(manifest)))
+
+    new_site = calls[1][0][0]
+    assert new_site[-1] == "client.localhost"
+    assert not any(arg.startswith("--install-app=") for arg in new_site)
+
+
+def test_multi_site_existing_site_only_installs_missing_requested_apps(
+    tmp_path, monkeypatch
+):
+    bench_dir = make_bench(tmp_path, "frappe", "erpnext", "client_app")
+    site_dir = bench_dir / "sites" / "client.localhost"
+    site_dir.mkdir()
+    (site_dir / "site_config.json").write_text("{}")
+    manifest = tmp_path / "sites.json"
+    manifest.write_text(
+        '[{"name":"client.localhost",'
+        '"apps":["erpnext","client_app"],"set_default":true}]'
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        installer, "_site_installed_apps", lambda *_: {"frappe", "erpnext"}
+    )
+    calls = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    installer.create_site_in_bench(parse_args("--sites-json", str(manifest)))
+
+    assert calls[1][0][0] == [
+        "bench",
+        "--site",
+        "client.localhost",
+        "install-app",
+        "client_app",
+    ]
+    assert calls[2][0][0] == ["bench", "use", "client.localhost"]
+
+
+def test_installed_apps_accepts_frappe_v15_site_mapping(tmp_path, monkeypatch):
+    bench_dir = make_bench(tmp_path, "frappe", "erpnext")
+    monkeypatch.setattr(
+        installer,
+        "_capture",
+        lambda *args, **kwargs: '{"client.localhost":["frappe","erpnext"]}',
+    )
+
+    apps = installer._site_installed_apps(bench_dir, "client.localhost")
+
+    assert apps == {"frappe", "erpnext"}
+
+
 def test_subprocess_failures_are_reported_without_secrets(monkeypatch, capsys):
     error = subprocess.CalledProcessError(
         7,
@@ -415,6 +608,8 @@ def test_subprocess_failures_are_reported_without_secrets(monkeypatch, capsys):
     parser = SimpleNamespace(parse_args=lambda: parsed_args)
     monkeypatch.setattr(installer, "get_args_parser", lambda: parser)
     monkeypatch.setattr(installer, "init_bench_if_not_exist", lambda args: None)
+    monkeypatch.setattr(installer, "sync_manifest_apps", lambda args: None)
+    monkeypatch.setattr(installer, "configure_app_git_remotes", lambda args: None)
 
     def fail_to_create_site(args):
         raise error

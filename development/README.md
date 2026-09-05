@@ -3,8 +3,10 @@
 This directory is mounted at `/workspace/development` inside the `frappe`
 container. The one-command bootstrap creates the default Bench in
 `development/frappe-bench`; generated Bench files remain ignored by Git.
-The default setup installs only the Frappe framework. The local app manifest
-belongs at `.config/apps.json`; see the complete guide for its format.
+The default setup installs only the Frappe framework and creates `localhost`.
+The local app manifest belongs at `.config/apps.json`. Optionally configure
+`.config/sites.json` to run several database-isolated client sites from the
+same Bench; see the complete guide for both formats.
 
 From the repository root, start or resume the environment:
 
@@ -13,7 +15,8 @@ docker compose -f .config/docker-compose.yml up --detach --wait
 ```
 
 After setup, open a container terminal, change to the Bench directory, and run
-`bench start`. Then open `http://localhost:8000`.
+`bench start`. Then open `http://localhost:8000` for the legacy site or a
+configured hostname such as `http://client.localhost:8000`.
 
 Common host commands:
 
