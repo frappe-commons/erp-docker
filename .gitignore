@@ -45,7 +45,6 @@ node_modules
 
 # Backup
 /backup
-.tokensave
 
 # VitePress
 **/.vitepress/dist
