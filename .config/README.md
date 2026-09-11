@@ -16,8 +16,9 @@ The Rebuild and Reopen progress view streams the detailed setup log.
 The Bench directory is always `frappe-bench`. Without `SITES_JSON`, its site is
 `localhost`. With `SITES_JSON`, every entry is a separate Frappe site with its
 own MariaDB database, files, configuration, and installed-app selection.
-Each app keeps Bench's `upstream` remote and also gets an `origin` remote that
-fetches all branches, so standard `git switch <branch>` workflows work.
+Each app keeps Bench's `upstream` remote and also gets an `origin` remote.
+Bootstrap does not fetch every remote branch; fetch a branch explicitly when
+you need to switch to it.
 Before creating Bench, setup checks that every configured app repository and
 branch/tag is accessible non-interactively through the forwarded host SSH agent
 and read-only host SSH directory. Fixing host Git/SSH access and rebuilding

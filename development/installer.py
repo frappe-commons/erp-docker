@@ -514,7 +514,7 @@ def _capture(command, *, cwd: Path, check: bool = True) -> str:
 
 
 def configure_app_git_remotes(args: argparse.Namespace) -> None:
-    """Expose every app's branches through a conventional origin remote."""
+    """Ensure every app has a conventional origin remote without fetching it."""
     bench_dir = Path.cwd() / BENCH_NAME
     apps_dir = bench_dir / "apps"
     manifest_urls = {}
@@ -522,13 +522,11 @@ def configure_app_git_remotes(args: argparse.Namespace) -> None:
         manifest = _load_app_manifest(args.apps_json)
         manifest_urls = {_manifest_app_name(app): app.get("url") for app in manifest}
 
-    full_fetch = "+refs/heads/*:refs/remotes/origin/*"
     for app_dir in sorted(apps_dir.iterdir()):
         if not (app_dir / ".git").is_dir():
             continue
 
         remotes = set(_capture(["git", "remote"], cwd=app_dir).splitlines())
-        origin_added = False
         if "origin" not in remotes:
             remote_url = None
             if "upstream" in remotes:
@@ -544,41 +542,6 @@ def configure_app_git_remotes(args: argparse.Namespace) -> None:
                 )
                 continue
             _run(["git", "remote", "add", "origin", remote_url], cwd=app_dir)
-            origin_added = True
-
-        fetch_rules = _capture(
-            ["git", "config", "--get-all", "remote.origin.fetch"],
-            cwd=app_dir,
-            check=False,
-        ).splitlines()
-        fetch_complete = (
-            _capture(
-                [
-                    "git",
-                    "config",
-                    "--bool",
-                    "--get",
-                    "frappe-docker.all-branches-fetched",
-                ],
-                cwd=app_dir,
-                check=False,
-            )
-            == "true"
-        )
-        if origin_added or fetch_rules != [full_fetch] or not fetch_complete:
-            cprint(f"Fetching all Git branches for {app_dir.name}", level=3)
-            _run(
-                ["git", "config", "--replace-all", "remote.origin.fetch", full_fetch],
-                cwd=app_dir,
-            )
-            fetch_command = ["git", "fetch", "origin", "--prune"]
-            if (app_dir / ".git" / "shallow").is_file():
-                fetch_command.insert(2, "--depth=1")
-            _run(fetch_command, cwd=app_dir)
-            _run(
-                ["git", "config", "frappe-docker.all-branches-fetched", "true"],
-                cwd=app_dir,
-            )
 
 
 def _installed_apps(bench_dir: Path, apps_json: str | None = None):
