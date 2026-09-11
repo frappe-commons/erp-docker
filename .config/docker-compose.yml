@@ -28,10 +28,6 @@ services:
 
   frappe:
     image: docker.io/frappe/bench:latest
-    # Expose the host NVIDIA GPU to the development container. Docker's
-    # NVIDIA runtime is installed on the host; Compose translates this into
-    # an NVIDIA device request when the container is created.
-    gpus: all
     user: root
     init: true
     command: ["bash", "/workspace/.devcontainer/start-development.sh"]
