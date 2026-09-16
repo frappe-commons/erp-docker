@@ -50,6 +50,9 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-1212}
       DB_PASSWORD: ${DB_PASSWORD:-123}
       FRAPPE_API_TOKEN: ${FRAPPE_API_TOKEN:-}
+      # Authenticate the bridged GitHub CLI (`gh`) for pull requests and other
+      # API operations. Prefer GH_TOKEN over GITHUB_TOKEN to avoid collisions.
+      GH_TOKEN: ${GH_TOKEN:-}
       FRAPPE_BRANCH: ${FRAPPE_BRANCH:-version-16}
       # Keep unattended setup non-interactive while leaving host-specific SSH
       # routing and identity selection to the mounted host configuration.
@@ -61,6 +64,9 @@ services:
       # Share host-installed user CLIs without exposing the entire host home.
       - ${HOME}/.cargo/bin:/opt/host-cli/cargo/bin:ro
       - ${HOME}/.local/bin:/opt/host-cli/local/bin:ro
+      # The GitHub CLI ships as a standalone binary outside the standard
+      # bridged directories, so mount it explicitly.
+      - ${HOST_GH_HOME:-${HOME}/.local/gh}:/opt/host-cli/gh:ro
       - ${HOME}/.nvm:/opt/host-cli/nvm:ro
       - type: bind
         source: ${HOST_CODEX_HOME:-${HOME}/.codex}

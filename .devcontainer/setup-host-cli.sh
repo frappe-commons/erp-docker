@@ -73,6 +73,13 @@ for source_dir in "${source_dirs[@]}"; do
   done
 done
 
+# The GitHub CLI is a standalone host binary outside the standard bridged
+# directories. Link it so `gh` works everywhere in the container; GH_TOKEN from
+# .config/.env provides the credentials because host keyring auth is not shared.
+if [ -x "$host_cli_root/gh/gh" ] && [ ! -e "$host_cli_bin/gh" ]; then
+  ln -s "$host_cli_root/gh/gh" "$host_cli_bin/gh"
+fi
+
 # uv tool entry points use an absolute host-Python shebang. Run Headroom with
 # that interpreter through the mounted host loader so it remains usable when
 # the container image has an older glibc than the host.

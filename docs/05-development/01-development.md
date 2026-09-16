@@ -380,6 +380,12 @@ only when the host uses nonstandard XDG paths. The OpenCode wrapper (enabled
 with `ENABLE_HOST_AGENT_TOOLS`) also disables OpenCode's self-update, because
 the container runs the host's read-only installation.
 
+The host GitHub CLI at `~/.local/gh/gh` is bridged into the container. Its
+login is kept in the host keyring and cannot be shared, so set `GH_TOKEN` in
+`.config/.env` (using the value from `gh auth token` on the host) to enable
+`gh` API, pull request, and merge operations inside the container. Set
+`HOST_GH_HOME` when the host GitHub CLI directory is not `~/.local/gh`.
+
 ## Use VS Code Dev Containers
 
 VS Code is optional and uses the same Compose project:

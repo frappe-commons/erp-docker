@@ -35,6 +35,12 @@ Host-installed user CLIs are bridged into the development container from the
 host's NVM, Cargo, and `~/.local/bin` directories. Their launchers are rebuilt
 whenever the container starts.
 
+The host GitHub CLI (`~/.local/gh/gh`) is bridged too. The host login lives in
+the OS keyring and is not shared, so set `GH_TOKEN` in `.config/.env` (from
+`gh auth token` on the host) to enable `gh` API, pull request, and merge
+operations inside the container. Set `HOST_GH_HOME` when the host GitHub CLI
+directory is not `~/.local/gh`.
+
 Codex, OpenCode, Headroom, and TokenSave integration is optional and disabled
 by default. Enable it for one machine by adding these values to the ignored
 `.config/.env`:
