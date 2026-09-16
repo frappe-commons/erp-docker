@@ -65,6 +65,21 @@ services:
       - type: bind
         source: ${HOST_CODEX_HOME:-${HOME}/.codex}
         target: /home/frappe/.codex
+      # Share the host OpenCode configuration, credentials, sessions, and
+      # caches the same way the host Codex state is shared, so the CLI and
+      # editor integrations stay in sync across container rebuilds.
+      - type: bind
+        source: ${HOST_OPENCODE_CONFIG_HOME:-${HOME}/.config/opencode}
+        target: /home/frappe/.config/opencode
+      - type: bind
+        source: ${HOST_OPENCODE_DATA_HOME:-${HOME}/.local/share/opencode}
+        target: /home/frappe/.local/share/opencode
+      - type: bind
+        source: ${HOST_OPENCODE_CACHE_HOME:-${HOME}/.cache/opencode}
+        target: /home/frappe/.cache/opencode
+      - type: bind
+        source: ${HOST_OPENCODE_STATE_HOME:-${HOME}/.local/state/opencode}
+        target: /home/frappe/.local/state/opencode
       - ${HOME}/.tokensave:/opt/host-cli/state/tokensave
       # Preserve host SSH behavior, including aliases, Include files,
       # certificates, and IdentityFile paths. The tree is read-only; Dev

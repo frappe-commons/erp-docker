@@ -35,8 +35,9 @@ Host-installed user CLIs are bridged into the development container from the
 host's NVM, Cargo, and `~/.local/bin` directories. Their launchers are rebuilt
 whenever the container starts.
 
-Codex, Headroom, and TokenSave integration is optional and disabled by default.
-Enable it for one machine by adding these values to the ignored `.config/.env`:
+Codex, OpenCode, Headroom, and TokenSave integration is optional and disabled
+by default. Enable it for one machine by adding these values to the ignored
+`.config/.env`:
 
 ```dotenv
 ENABLE_HOST_AGENT_TOOLS=1
@@ -63,18 +64,28 @@ using the host-installed version and enables TokenSave only when the current
 Git repository already contains a readable `.tokensave/tokensave.db`.
 TokenSave is never initialized implicitly.
 
+OpenCode works the same way under `ENABLE_HOST_AGENT_TOOLS`. The host
+`~/.config/opencode`, `~/.local/share/opencode`, `~/.cache/opencode`, and
+`~/.local/state/opencode` directories are mounted, so credentials, providers,
+plugins, and sessions are shared with the host. Its wrapper reuses the same
+container-local Headroom proxy and TokenSave detection and disables OpenCode's
+self-update, because the shared binary is the host's read-only installation.
+Set `HOST_OPENCODE_*_HOME` in `.config/.env` when the host uses nonstandard XDG
+paths.
+
 When the three `HOST_LMS_*_SOURCE` paths are set, the same opt-in also exposes
 the host `lms` CLI in the container. A host-side bridge is started when the Dev
 Container opens and accepts traffic only from this Compose project's `frappe`
 container; LM Studio remains bound to host loopback and is not exposed to the
 LAN. Start LM Studio's service before opening or rebuilding the container.
 
-Docker is the Codex isolation boundary in this environment, so the wrapper
-defaults to `--sandbox danger-full-access` while retaining the configured
-approval policy. Set `CODEX_CONTAINER_SANDBOX` in `.config/.env` to override
-that mode. Codex and TokenSave state remain shared through `~/.codex` and
-`~/.tokensave`; the rest of the host home is not mounted. Recreate the `frappe`
-container after installing or upgrading a CLI.
+Docker is the Codex and OpenCode isolation boundary in this environment, so
+the Codex wrapper defaults to `--sandbox danger-full-access` while retaining
+the configured approval policy. Set `CODEX_CONTAINER_SANDBOX` in `.config/.env`
+to override that mode. Codex, OpenCode, and TokenSave state remain shared
+through `~/.codex`, the OpenCode directories above, and `~/.tokensave`; the
+rest of the host home is not mounted. Recreate the `frappe` container after
+installing or upgrading a CLI.
 
 Configuration belongs in the ignored `.config/.env` file. Read the
 [complete development environment guide](../docs/05-development/01-development.md)

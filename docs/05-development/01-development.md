@@ -370,6 +370,16 @@ container rebuilds and are shared by the Codex CLI and editor integrations.
 Set `HOST_CODEX_HOME` in `.config/.env` only when the host uses a nonstandard
 Codex state directory.
 
+The host OpenCode directories are mounted the same way:
+`~/.config/opencode`, `~/.local/share/opencode`, `~/.cache/opencode`, and
+`~/.local/state/opencode`. Authentication, providers, plugins, and saved
+sessions are shared between the host and the container. Set
+`HOST_OPENCODE_CONFIG_HOME`, `HOST_OPENCODE_DATA_HOME`,
+`HOST_OPENCODE_CACHE_HOME`, or `HOST_OPENCODE_STATE_HOME` in `.config/.env`
+only when the host uses nonstandard XDG paths. The OpenCode wrapper (enabled
+with `ENABLE_HOST_AGENT_TOOLS`) also disables OpenCode's self-update, because
+the container runs the host's read-only installation.
+
 ## Use VS Code Dev Containers
 
 VS Code is optional and uses the same Compose project:

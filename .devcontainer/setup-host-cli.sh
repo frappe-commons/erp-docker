@@ -14,6 +14,7 @@ shopt -s nullglob
 nvm_bins=("$host_cli_root"/nvm/versions/node/*/bin)
 source_dirs=()
 codex_host_executable=
+opencode_host_executable=
 headroom_host_executable=
 lms_host_executable=
 host_agent_tools_enabled=false
@@ -36,6 +37,12 @@ for source_dir in "${source_dirs[@]}"; do
 		if [ "$name" = codex ]; then
 			if [ "$host_agent_tools_enabled" = true ]; then
 				[ -n "$codex_host_executable" ] || codex_host_executable=$executable
+			fi
+			continue
+		fi
+		if [ "$name" = opencode ]; then
+			if [ "$host_agent_tools_enabled" = true ]; then
+				[ -n "$opencode_host_executable" ] || opencode_host_executable=$executable
 			fi
 			continue
 		fi
@@ -181,6 +188,73 @@ CODEX_WRAPPER
   } >"$codex_wrapper"
   chmod 0755 "$codex_wrapper"
   mv -f "$codex_wrapper" "$host_cli_bin/codex"
+fi
+
+# OpenCode shares the host configuration, credentials, and sessions through
+# the mounted host directories. Its config refers to host-only MCP executables,
+# so wrap OpenCode with container-only overrides, mirroring the Codex wrapper
+# instead of modifying the host config. Host-managed updates are disabled
+# because the shared binary lives on the read-only host mount.
+if [ -n "$opencode_host_executable" ]; then
+  opencode_wrapper=$(mktemp "$host_cli_bin/.opencode.XXXXXX")
+  {
+    printf '#!/usr/bin/env bash\nset -euo pipefail\n'
+    printf 'opencode_host_command=('
+    if [ -x "$host_loader" ] && file -Lb "$opencode_host_executable" | grep -q '^ELF '; then
+      printf '%q ' "$host_loader" --library-path "$host_cli_root/lib" "$opencode_host_executable"
+    else
+      printf '%q ' "$opencode_host_executable"
+    fi
+    printf ')\n'
+    cat <<'OPENCODE_WRAPPER'
+
+opencode_container_bin=${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}
+export PATH="$PATH:$opencode_container_bin"
+
+if command -v headroom >/dev/null 2>&1; then
+  bash /workspace/.devcontainer/ensure-headroom.sh
+fi
+
+opencode_headroom_enabled=false
+if command -v headroom >/dev/null 2>&1 &&
+  curl --fail --silent --show-error --connect-timeout 1 \
+    http://127.0.0.1:8787/livez >/dev/null 2>&1; then
+  opencode_headroom_enabled=true
+fi
+
+opencode_tokensave_enabled=false
+if command -v tokensave >/dev/null 2>&1 &&
+  opencode_repository_root=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null) &&
+  [ -r "$opencode_repository_root/.tokensave/tokensave.db" ]; then
+  opencode_tokensave_enabled=true
+fi
+
+opencode_override_json=$(cat <<JSON
+{
+  "\$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "mcp": {
+    "headroom": {
+      "type": "local",
+      "command": ["headroom", "mcp", "serve", "--proxy-url", "http://127.0.0.1:8787"],
+      "enabled": $opencode_headroom_enabled
+    },
+    "tokensave": {
+      "type": "local",
+      "command": ["tokensave", "serve"],
+      "enabled": $opencode_tokensave_enabled
+    }
+  }
+}
+JSON
+)
+export OPENCODE_CONFIG_CONTENT="$opencode_override_json"
+
+exec "${opencode_host_command[@]}" "$@"
+OPENCODE_WRAPPER
+  } >"$opencode_wrapper"
+  chmod 0755 "$opencode_wrapper"
+  mv -f "$opencode_wrapper" "$host_cli_bin/opencode"
 fi
 
 # TokenSave uses ~/.tokensave directly. Keep its writable host state available
