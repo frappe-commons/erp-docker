@@ -126,7 +126,7 @@ fi
 # localhost:8787. Run an equivalent proxy in the container so those settings,
 # compression, and retrieval behavior stay consistent with the host.
 if [ -x "$host_cli_bin/headroom" ]; then
-  bash /workspace/.devcontainer/ensure-headroom.sh
+  bash /workspace/.devcontainer/ensure-headroom.sh || true
 fi
 
 # The host Codex config is mounted for shared authentication and preferences,
@@ -150,7 +150,7 @@ codex_container_sandbox=${CODEX_CONTAINER_SANDBOX:-danger-full-access}
 export PATH="$PATH:$codex_container_bin"
 
 if command -v headroom >/dev/null 2>&1; then
-  bash /workspace/.devcontainer/ensure-headroom.sh
+  bash /workspace/.devcontainer/ensure-headroom.sh || true
 fi
 
 codex_working_dir=$PWD
@@ -219,7 +219,7 @@ opencode_container_bin=${HOST_CLI_PATH:-/home/frappe/.host-cli/bin}
 export PATH="$PATH:$opencode_container_bin"
 
 if command -v headroom >/dev/null 2>&1; then
-  bash /workspace/.devcontainer/ensure-headroom.sh
+  bash /workspace/.devcontainer/ensure-headroom.sh || true
 fi
 
 opencode_headroom_enabled=false
