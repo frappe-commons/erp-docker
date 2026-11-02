@@ -207,11 +207,12 @@ if [ -n "$opencode_host_executable" ]; then
   {
     printf '#!/usr/bin/env bash\nset -euo pipefail\n'
     printf 'opencode_host_command=('
-    if [ -x "$host_loader" ] && file -Lb "$opencode_host_executable" | grep -q '^ELF '; then
-      printf '%q ' "$host_loader" --library-path "$host_cli_root/lib" "$opencode_host_executable"
-    else
-      printf '%q ' "$opencode_host_executable"
-    fi
+    # OpenCode is a bundled Bun executable. Invoke it directly like lms: it
+    # starts its background service by re-executing itself (process.execPath),
+    # and going through the mounted loader makes that child resolve to the
+    # loader, which then fails with "serve: cannot open shared object file"
+    # (exit 127). The container glibc can run this binary without the loader.
+    printf '%q ' "$opencode_host_executable"
     printf ')\n'
     cat <<'OPENCODE_WRAPPER'
 
